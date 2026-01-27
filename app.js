@@ -1,6 +1,6 @@
 // Twitch OAuth Configuration
 const TWITCH_CONFIG = {
-    clientId: localStorage.getItem('twitch_client_id') || '',
+    clientId: localStorage.getItem('ilf1p5tr7eydtaw36dje0q1a78e1cf') || '',
     redirectUri: window.location.origin + window.location.pathname,
     scopes: ['chat:read', 'chat:edit']
 };
