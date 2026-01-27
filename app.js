@@ -224,25 +224,40 @@ document.querySelectorAll('.mode-btn').forEach(btn => {
 
 function updateAnswersUI() {
     const answersContainer = document.getElementById('answersContainer');
+    const typeSelectors = document.querySelectorAll('.answer-type');
+    
     if (gameState.gameMode === 'colors') {
+        // Show color system
         answersContainer.style.display = 'block';
-    } else {
-        answersContainer.style.display = 'block';
-        // Clear to single answer for match/avoid modes
-        if (answersList.children.length > 1) {
-            while (answersList.children.length > 1) {
-                answersList.removeChild(answersList.lastChild);
-            }
-        }
-        // Hide type selector for non-color modes
-        const typeSelectors = answersList.querySelectorAll('.answer-type');
         typeSelectors.forEach(sel => {
-            if (gameState.gameMode === 'colors') {
-                sel.style.display = 'block';
-            } else {
-                sel.style.display = 'none';
+            sel.style.display = 'block';
+        });
+        // Update all inputs to show as match initially for colors mode
+        document.querySelectorAll('.answer-input').forEach(input => {
+            if (!input.value) {
+                const select = input.closest('.answer-input-group').querySelector('.answer-type');
+                if (select) {
+                    select.value = 'match'; // Default to green
+                }
             }
         });
+    } else {
+        // Hide type selectors for match/avoid modes
+        answersContainer.style.display = 'block';
+        typeSelectors.forEach(sel => {
+            sel.style.display = 'none';
+            // Set value based on game mode
+            if (gameState.gameMode === 'match') {
+                sel.value = 'match';
+            } else if (gameState.gameMode === 'avoid') {
+                sel.value = 'avoid';
+            }
+        });
+        
+        // Keep only first answer for match/avoid
+        while (answersList.children.length > 1) {
+            answersList.removeChild(answersList.lastChild);
+        }
     }
 }
 
@@ -392,12 +407,8 @@ startGameBtn.addEventListener('click', () => {
     resultsCard.classList.add('hidden');
     
     // Send to chat
-    gameState.client.say(gameState.channel, `━━━━━━━━━━━━━━━━━━━━━━`);
-    gameState.client.say(gameState.channel, `🎮 جولة جديدة من "أنت وحظك"!`);
-    gameState.client.say(gameState.channel, `❓ السؤال: ${question}`);
-    gameState.client.say(gameState.channel, `⏰ لديكم ${gameState.timeRemaining} ثانية للإجابة!`);
-    gameState.client.say(gameState.channel, `📝 اكتبوا إجابتكم في الشات الآن!`);
-    gameState.client.say(gameState.channel, `━━━━━━━━━━━━━━━━━━━━━━`);
+    gameState.client.say(gameState.channel, `🎮 ${question}`);
+    gameState.client.say(gameState.channel, `⏰ ${gameState.timeRemaining} ثانية`);
     
     startTimer();
 });
