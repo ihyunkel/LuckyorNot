@@ -107,19 +107,21 @@
 
                 <div id="answersContainer">
                     <div class="form-group">
-                        <label>إجاباتك السرية</label>
-                        <div id="answersList">
-                            <div class="answer-input-group">
-                                <input type="text" class="answer-input" placeholder="الإجابة الأولى" data-type="neutral">
-                                <select class="answer-type">
-                                    <option value="match">أخضر (+1)</option>
-                                    <option value="neutral" selected>أصفر (0)</option>
-                                    <option value="avoid">أحمر (-1)</option>
-                                </select>
-                                <button class="btn-remove-answer" style="display:none;">×</button>
+                        <label>إجاباتك (سيتم إخفاؤها عن المشاهدين)</label>
+                        <div class="answers-secret-box">
+                            <div id="answersList">
+                                <div class="answer-input-group">
+                                    <input type="text" class="answer-input" placeholder="الإجابة الأولى" data-type="neutral">
+                                    <select class="answer-type">
+                                        <option value="match">أخضر (+1)</option>
+                                        <option value="neutral" selected>أصفر (0)</option>
+                                        <option value="avoid">أحمر (-1)</option>
+                                    </select>
+                                    <button class="btn-remove-answer" style="display:none;">×</button>
+                                </div>
                             </div>
+                            <button class="btn-secondary" id="addAnswerBtn">+ إضافة إجابة</button>
                         </div>
-                        <button class="btn-secondary" id="addAnswerBtn">+ إضافة إجابة</button>
                     </div>
                 </div>
 
@@ -171,7 +173,7 @@
         </section>
     </div>
 
-    <script src="tmi.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tmi.js@1.8.5/dist/tmi.min.js"></script>
     <script>
         // Check if tmi.js loaded, if not try alternative CDN
         if (typeof tmi === 'undefined') {
