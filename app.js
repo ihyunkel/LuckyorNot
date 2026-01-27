@@ -5,6 +5,26 @@ const TWITCH_CONFIG = {
     scopes: ['chat:read', 'chat:edit']
 };
 
+// Normalize Arabic text for better matching
+function normalizeArabic(text) {
+    if (!text) return '';
+    return text
+        .toLowerCase()
+        .trim()
+        // Normalize Alef variations
+        .replace(/[أإآا]/g, 'ا')
+        // Normalize Taa Marbuta and Haa
+        .replace(/[ةه]/g, 'ه')
+        // Normalize Yaa variations
+        .replace(/[يى]/g, 'ي')
+        // Remove Tatweel
+        .replace(/ـ/g, '')
+        // Remove diacritics (Tashkeel)
+        .replace(/[\u064B-\u065F]/g, '')
+        // Remove extra spaces
+        .replace(/\s+/g, ' ');
+}
+
 // Game State
 let gameState = {
     channel: '',
@@ -53,9 +73,11 @@ addAnswerFloatBtn.addEventListener('click', () => {
     answerGroup.innerHTML = `
         <input type="text" class="answer-input-float" placeholder="إجابة" data-index="${index}">
         <select class="answer-type-float">
-            <option value="match">🟢</option>
-            <option value="neutral" selected>🟡</option>
-            <option value="avoid">🔴</option>
+            <option value="super">💛 (+2)</option>
+            <option value="match">🟢 (+1)</option>
+            <option value="neutral" selected>🟡 (0)</option>
+            <option value="avoid">🔴 (-1)</option>
+            <option value="bad">⚫ (-2)</option>
         </select>
     `;
     answersListFloat.appendChild(answerGroup);
@@ -253,25 +275,37 @@ document.querySelectorAll('.mode-btn').forEach(btn => {
 
 function updateAnswersUI() {
     const typeSelectors = document.querySelectorAll('.answer-type-float');
+    const answerGroups = document.querySelectorAll('.answer-input-group-float');
     
     if (gameState.gameMode === 'colors') {
-        // Show all options for colors mode
+        // Show all options for colors mode - all selectors visible
         typeSelectors.forEach(sel => {
             sel.style.display = 'block';
+            // Reset to default for colors
+            if (sel.value !== 'super' && sel.value !== 'match' && sel.value !== 'neutral' && sel.value !== 'avoid' && sel.value !== 'bad') {
+                sel.value = 'neutral';
+            }
         });
-    } else {
-        // For match/avoid modes, keep single answer and update type
+    } else if (gameState.gameMode === 'match') {
+        // For match mode: keep only first answer, hide selector, set to match
         typeSelectors.forEach((sel, index) => {
             if (index === 0) {
-                sel.style.display = 'block';
-                if (gameState.gameMode === 'match') {
-                    sel.value = 'match';
-                } else if (gameState.gameMode === 'avoid') {
-                    sel.value = 'avoid';
-                }
+                sel.style.display = 'none';
+                sel.value = 'match';
             } else {
-                // Remove extra answers for non-color modes
-                sel.closest('.answer-input-group-float').remove();
+                // Remove extra answers
+                answerGroups[index]?.remove();
+            }
+        });
+    } else if (gameState.gameMode === 'avoid') {
+        // For avoid mode: keep only first answer, hide selector, set to avoid
+        typeSelectors.forEach((sel, index) => {
+            if (index === 0) {
+                sel.style.display = 'none';
+                sel.value = 'avoid';
+            } else {
+                // Remove extra answers
+                answerGroups[index]?.remove();
             }
         });
     }
@@ -394,7 +428,7 @@ startGameBtn.addEventListener('click', () => {
             const typeSelect = input.closest('.answer-input-group-float').querySelector('.answer-type-float');
             const type = typeSelect ? typeSelect.value : gameState.gameMode;
             answers.push({
-                text: answer.toLowerCase(),
+                text: normalizeArabic(answer), // Normalize the answer
                 type: type
             });
         }
@@ -456,19 +490,55 @@ function updateTimerDisplay() {
 
 // Handle Messages
 function handleMessage(channel, tags, message, self) {
-    if (self || !gameState.currentGame) return;
+    if (self) return;
     
     const username = tags['display-name'] || tags.username;
-    const answer = message.trim().toLowerCase();
+    const messageText = message.trim();
+    
+    // Handle !توب command
+    if (messageText === '!توب' || messageText === '!top') {
+        sendLeaderboardToChat();
+        return;
+    }
+    
+    // If no active game, ignore
+    if (!gameState.currentGame) return;
     
     // Check if already participated
     if (gameState.participants.has(username)) {
         return;
     }
     
-    // Record participation
-    gameState.participants.set(username, answer);
+    // Normalize and record participation
+    const normalizedAnswer = normalizeArabic(messageText);
+    gameState.participants.set(username, normalizedAnswer);
     updateParticipantsList();
+}
+
+// Send leaderboard to chat
+function sendLeaderboardToChat() {
+    if (!gameState.client || !gameState.isConnected) return;
+    
+    const sorted = Array.from(gameState.leaderboard.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10);
+    
+    if (sorted.length === 0) {
+        gameState.client.say(gameState.channel, '📊 لا توجد نتائج حالياً');
+        return;
+    }
+    
+    gameState.client.say(gameState.channel, '👑 ═══ لوحة المتصدرين ═══ 👑');
+    
+    sorted.forEach(([player, score], index) => {
+        let medal = '';
+        if (index === 0) medal = '🥇';
+        else if (index === 1) medal = '🥈';
+        else if (index === 2) medal = '🥉';
+        else medal = `${index + 1}.`;
+        
+        gameState.client.say(gameState.channel, `${medal} ${player}: ${score} نقطة`);
+    });
 }
 
 function updateParticipantsList() {
@@ -519,9 +589,12 @@ function endCurrentGame() {
     // Display correct answers
     const correctAnswersText = gameState.answers.map(a => {
         let prefix = '';
-        if (a.type === 'match') prefix = '✅';
-        else if (a.type === 'avoid') prefix = '❌';
-        else prefix = '⚪';
+        if (a.type === 'super') prefix = '💛';
+        else if (a.type === 'match') prefix = '🟢';
+        else if (a.type === 'neutral') prefix = '🟡';
+        else if (a.type === 'avoid') prefix = '🔴';
+        else if (a.type === 'bad') prefix = '⚫';
+        else prefix = '🟡';
         return `${prefix} ${a.text}`;
     }).join(' | ');
     
@@ -542,12 +615,24 @@ function endCurrentGame() {
 }
 
 function evaluateAnswer(userAnswer) {
+    // Normalize user answer for comparison
+    const normalizedUserAnswer = normalizeArabic(userAnswer);
+    
     for (const answer of gameState.answers) {
-        if (userAnswer === answer.text) {
-            if (gameState.gameMode === 'match' || answer.type === 'match') {
+        const normalizedCorrectAnswer = normalizeArabic(answer.text);
+        
+        if (normalizedUserAnswer === normalizedCorrectAnswer) {
+            // Check answer type
+            if (answer.type === 'super') {
+                return { points: 2, type: 'super' };
+            } else if (gameState.gameMode === 'match' || answer.type === 'match') {
                 return { points: 1, type: 'correct' };
+            } else if (answer.type === 'neutral') {
+                return { points: 0, type: 'neutral' };
             } else if (gameState.gameMode === 'avoid' || answer.type === 'avoid') {
                 return { points: -1, type: 'incorrect' };
+            } else if (answer.type === 'bad') {
+                return { points: -2, type: 'bad' };
             } else {
                 return { points: 0, type: 'neutral' };
             }
@@ -568,9 +653,12 @@ function displayResults(results) {
     // Show correct answers
     const answersText = gameState.answers.map(a => {
         let label = '';
-        if (a.type === 'match') label = 'أخضر (+1)';
-        else if (a.type === 'avoid') label = 'أحمر (-1)';
-        else label = 'أصفر (0)';
+        if (a.type === 'super') label = '💛 ذهبي (+2)';
+        else if (a.type === 'match') label = '🟢 أخضر (+1)';
+        else if (a.type === 'neutral') label = '🟡 أصفر (0)';
+        else if (a.type === 'avoid') label = '🔴 أحمر (-1)';
+        else if (a.type === 'bad') label = '⚫ أسود (-2)';
+        else label = '🟡 أصفر (0)';
         return `<span style="margin-left: 15px;"><strong>${a.text}</strong> - ${label}</span>`;
     }).join('');
     
