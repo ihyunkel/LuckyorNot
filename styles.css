@@ -37,11 +37,36 @@ body {
     background: var(--bg-darker);
     background-image: 
         radial-gradient(circle at 20% 50%, rgba(0, 217, 255, 0.08) 0%, transparent 50%),
-        radial-gradient(circle at 80% 80%, rgba(255, 0, 110, 0.08) 0%, transparent 50%);
+        radial-gradient(circle at 80% 80%, rgba(255, 0, 110, 0.08) 0%, transparent 50%),
+        repeating-linear-gradient(45deg, transparent, transparent 60px, rgba(0, 217, 255, 0.02) 60px, rgba(0, 217, 255, 0.02) 120px),
+        repeating-linear-gradient(-45deg, transparent, transparent 60px, rgba(255, 0, 110, 0.02) 60px, rgba(255, 0, 110, 0.02) 120px);
     color: var(--text-primary);
     line-height: 1.6;
     min-height: 100vh;
     overflow-x: hidden;
+    position: relative;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: 
+        radial-gradient(circle, rgba(0, 217, 255, 0.03) 1px, transparent 1px),
+        radial-gradient(circle, rgba(255, 0, 110, 0.03) 1px, transparent 1px);
+    background-size: 50px 50px, 80px 80px;
+    background-position: 0 0, 25px 25px;
+    animation: backgroundMove 20s linear infinite;
+    z-index: 0;
+    pointer-events: none;
+}
+
+@keyframes backgroundMove {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(50px, 50px); }
 }
 
 .grain-overlay {
@@ -69,7 +94,7 @@ body {
     position: fixed;
     left: 20px;
     top: 20px;
-    width: 280px;
+    width: 320px;
     background: var(--bg-card);
     border: 2px solid var(--primary-color);
     border-radius: 16px;
@@ -85,7 +110,7 @@ body {
 
 .secret-header {
     background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-    padding: 12px 16px;
+    padding: 14px 18px;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -94,13 +119,13 @@ body {
 }
 
 .secret-icon {
-    font-size: 1.2rem;
+    font-size: 1.3rem;
 }
 
 .secret-title {
     flex: 1;
     font-weight: 700;
-    font-size: 0.95rem;
+    font-size: 1rem;
     color: white;
 }
 
@@ -108,11 +133,11 @@ body {
     background: rgba(255, 255, 255, 0.2);
     border: none;
     color: white;
-    width: 28px;
-    height: 28px;
+    width: 30px;
+    height: 30px;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 1.3rem;
+    font-size: 1.4rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -124,8 +149,8 @@ body {
 }
 
 .secret-content {
-    padding: 16px;
-    max-height: 400px;
+    padding: 18px;
+    max-height: 500px;
     overflow-y: auto;
 }
 
@@ -146,17 +171,18 @@ body {
 .answer-input-group-float {
     display: flex;
     gap: 8px;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
+    align-items: stretch;
 }
 
 .answer-input-float {
     flex: 1;
-    padding: 10px;
+    padding: 12px;
     background: var(--bg-darker);
     border: 1px solid var(--border-color);
     border-radius: 8px;
     color: var(--text-primary);
-    font-size: 0.9rem;
+    font-size: 1rem;
     font-family: 'Cairo', sans-serif;
     transition: var(--transition);
 }
@@ -168,20 +194,21 @@ body {
 }
 
 .answer-type-float {
-    padding: 10px;
+    padding: 8px 10px;
     background: var(--bg-darker);
     border: 1px solid var(--border-color);
     border-radius: 8px;
     color: var(--text-primary);
-    font-size: 1.2rem;
+    font-size: 1rem;
     cursor: pointer;
-    width: 50px;
+    min-width: 90px;
     text-align: center;
+    font-family: 'Cairo', sans-serif;
 }
 
 .btn-add-answer-float {
     width: 100%;
-    padding: 10px;
+    padding: 12px;
     background: var(--primary-color);
     border: none;
     border-radius: 8px;
@@ -852,4 +879,21 @@ body {
     .game-header {
         flex-direction: column;
     }
+}
+
+/* New color types */
+.result-item.super {
+    border-right-color: #FFD60A;
+}
+
+.result-item.bad {
+    border-right-color: #1a1a1a;
+}
+
+.result-points.super {
+    color: #FFD60A;
+}
+
+.result-points.bad {
+    color: #888;
 }
