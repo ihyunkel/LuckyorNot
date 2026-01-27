@@ -6,25 +6,211 @@
     <title>أنت وحظك - لعبة تفاعلية</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Readex+Pro:wght@400;600;700&family=Amiri:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="background-pattern"></div>
+    <!-- Floating Secret Answers Box -->
+    <div class="secret-answers-float" id="secretAnswersFloat">
+        <div class="secret-header">
+            <span class="secret-icon">🔒</span>
+            <span class="secret-title">إجاباتك السرية</span>
+            <button class="secret-toggle" id="secretToggle">−</button>
+        </div>
+        <div class="secret-content" id="secretContent">
+            <div id="answersListFloat">
+                <div class="answer-input-group-float">
+                    <input type="text" class="answer-input-float" placeholder="إجابة" data-index="0">
+                    <select class="answer-type-float">
+                        <option value="match">🟢</option>
+                        <option value="neutral" selected>🟡</option>
+                        <option value="avoid">🔴</option>
+                    </select>
+                </div>
+            </div>
+            <button class="btn-add-answer-float" id="addAnswerFloatBtn">+</button>
+        </div>
+    </div>
+
+    <div class="grain-overlay"></div>
     
     <div class="container">
         <!-- Header Section -->
-        <header class="header">
-            <div class="logo-container">
-                <div class="logo-circle">
-                    <img src="logo.png" alt="Logo" class="logo-image" id="logoImage" onerror="this.src='logo.svg'">
-                </div>
-                <div class="title-group">
-                    <h1 class="main-title">أنت وحظك</h1>
-                    <p class="subtitle">لعبة تفاعلية مع المشاهدين</p>
-                </div>
+        <header class="header-new">
+            <div class="logo-wrapper">
+                <img src="logo.png" alt="Logo" class="logo-new" id="logoImage" onerror="this.style.display='none'">
+            </div>
+            <div class="title-container">
+                <h1 class="game-title">أنت وحظك</h1>
+                <div class="title-underline"></div>
+                <p class="game-subtitle">تحدى حظك وتوقع الإجابة الصحيحة</p>
+            </div>
+            <div class="header-decoration">
+                <div class="deco-circle"></div>
+                <div class="deco-circle"></div>
+                <div class="deco-circle"></div>
             </div>
         </header>
+
+        <!-- Setup Section -->
+        <section class="setup-section" id="setupSection">
+            <div class="setup-card">
+                <h2 class="section-title">
+                    <span class="title-icon">🎮</span>
+                    ابدأ اللعب
+                </h2>
+                <div class="auth-options">
+                    <!-- Easy OAuth Method -->
+                    <div class="auth-method recommended">
+                        <div class="method-badge">⚡ موصى به</div>
+                        <h3 class="method-title">تسجيل دخول سريع</h3>
+                        <p class="method-description">سجل دخول بحساب Twitch الخاص بك مباشرةً</p>
+                        <button class="btn-primary btn-twitch" id="twitchLoginBtn">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="margin-left: 10px;">
+                                <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z"/>
+                            </svg>
+                            تسجيل الدخول عبر Twitch
+                        </button>
+                    </div>
+
+                    <!-- Manual Token Method -->
+                    <div class="auth-method">
+                        <h3 class="method-title">الطريقة اليدوية</h3>
+                        <p class="method-description">استخدام توكن مخصص</p>
+                        <button class="btn-secondary" id="showManualBtn">استخدام توكن يدوي</button>
+                        
+                        <div class="manual-form hidden" id="manualForm">
+                            <div class="form-group">
+                                <label for="channelName">اسم القناة</label>
+                                <input type="text" id="channelName" placeholder="اسم قناتك">
+                            </div>
+                            <div class="form-group">
+                                <label for="botToken">OAuth Token</label>
+                                <input type="password" id="botToken" placeholder="oauth:xxxxxxxxxxxxxxxxxxxxxx">
+                                <small class="help-text">احصل عليه من <a href="https://twitchapps.com/tmi/" target="_blank">twitchapps.com/tmi</a></small>
+                            </div>
+                            <button class="btn-primary" id="connectBtn">اتصال</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Game Section -->
+        <section class="game-section hidden" id="gameSection">
+            <div class="connection-status">
+                <span class="status-indicator" id="statusIndicator"></span>
+                <span id="statusText">متصل بقناة: <strong id="connectedChannel"></strong></span>
+                <button class="btn-disconnect" id="disconnectBtn">قطع الاتصال</button>
+            </div>
+
+            <!-- Question Setup -->
+            <div class="question-setup-card">
+                <h2 class="section-title">
+                    <span class="title-icon">⚙️</span>
+                    إعداد السؤال
+                </h2>
+                
+                <div class="form-group">
+                    <label for="questionText">السؤال</label>
+                    <input type="text" id="questionText" placeholder="مثال: اذكر دولة خليجية">
+                </div>
+
+                <div class="form-group">
+                    <label for="gameMode">نوع اللعبة</label>
+                    <div class="mode-selector">
+                        <button class="mode-btn active" data-mode="match">
+                            <span class="mode-icon">✓</span>
+                            <span class="mode-label">مطابقة</span>
+                            <small>من يكتب نفس إجابتك يفوز</small>
+                        </button>
+                        <button class="mode-btn" data-mode="avoid">
+                            <span class="mode-icon">✗</span>
+                            <span class="mode-label">تجنب</span>
+                            <small>من يكتب إجابة مختلفة يفوز</small>
+                        </button>
+                        <button class="mode-btn" data-mode="colors">
+                            <span class="mode-icon">🎨</span>
+                            <span class="mode-label">ألوان</span>
+                            <small>🟢(+1) 🟡(0) 🔴(-1)</small>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="gameDuration">مدة الجولة (بالثواني)</label>
+                    <input type="number" id="gameDuration" value="30" min="10" max="120">
+                </div>
+
+                <button class="btn-primary btn-large" id="startGameBtn">
+                    <span>🚀</span>
+                    بدء الجولة
+                </button>
+            </div>
+
+            <!-- Active Game Display -->
+            <div class="active-game-card hidden" id="activeGameCard">
+                <div class="game-header">
+                    <h3 class="game-question" id="activeQuestion"></h3>
+                    <div class="timer-display">
+                        <svg class="timer-circle" width="80" height="80">
+                            <circle class="timer-bg" cx="40" cy="40" r="35"></circle>
+                            <circle class="timer-progress" cx="40" cy="40" r="35" id="timerCircle"></circle>
+                        </svg>
+                        <span class="timer-text" id="timerText">30</span>
+                    </div>
+                </div>
+
+                <div class="participants-section">
+                    <h4 class="participants-title">المشاركون (<span id="participantCount">0</span>)</h4>
+                    <div class="participants-list" id="participantsList"></div>
+                </div>
+
+                <button class="btn-danger" id="endGameBtn">إنهاء الجولة</button>
+            </div>
+
+            <!-- Results Display -->
+            <div class="results-card hidden" id="resultsCard">
+                <h3 class="section-title">
+                    <span class="title-icon">🏆</span>
+                    نتائج الجولة
+                </h3>
+                <div class="correct-answers" id="correctAnswers"></div>
+                <div class="results-list" id="resultsList"></div>
+                <button class="btn-primary" id="newRoundBtn">جولة جديدة</button>
+            </div>
+
+            <!-- Leaderboard -->
+            <div class="leaderboard-card">
+                <h3 class="section-title">
+                    <span class="title-icon">👑</span>
+                    لوحة المتصدرين
+                </h3>
+                <div class="leaderboard-list" id="leaderboardList">
+                    <div class="empty-state">لا توجد نتائج بعد</div>
+                </div>
+                <button class="btn-secondary" id="resetLeaderboardBtn">إعادة تعيين النقاط</button>
+            </div>
+        </section>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/tmi.js@1.8.5/dist/tmi.min.js"></script>
+    <script>
+        // Check if tmi.js loaded, if not try alternative CDN
+        if (typeof tmi === 'undefined') {
+            console.error('Failed to load tmi.js from jsdelivr, trying alternative...');
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/tmi.js@1.8.5/dist/tmi.min.js';
+            script.onerror = function() {
+                console.error('Failed to load tmi.js from all sources');
+                alert('فشل تحميل مكتبة الاتصال بـ Twitch. يرجى التحقق من اتصال الإنترنت أو المحاولة لاحقاً.');
+            };
+            document.head.appendChild(script);
+        }
+    </script>
+    <script src="app.js"></script>
+</body>
+</html>
 
         <!-- Setup Section -->
         <section class="setup-section" id="setupSection">
