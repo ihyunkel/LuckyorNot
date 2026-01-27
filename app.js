@@ -31,6 +31,35 @@ const manualForm = document.getElementById('manualForm');
 const channelNameInput = document.getElementById('channelName');
 const botTokenInput = document.getElementById('botToken');
 const connectBtn = document.getElementById('connectBtn');
+
+// Floating Secret Box Elements
+const secretToggle = document.getElementById('secretToggle');
+const secretContent = document.getElementById('secretContent');
+const secretAnswersFloat = document.querySelector('.secret-answers-float');
+const answersListFloat = document.getElementById('answersListFloat');
+const addAnswerFloatBtn = document.getElementById('addAnswerFloatBtn');
+
+// Toggle secret box
+secretToggle.addEventListener('click', () => {
+    secretAnswersFloat.classList.toggle('collapsed');
+    secretToggle.textContent = secretAnswersFloat.classList.contains('collapsed') ? '+' : '−';
+});
+
+// Add answer in floating box
+addAnswerFloatBtn.addEventListener('click', () => {
+    const index = answersListFloat.children.length;
+    const answerGroup = document.createElement('div');
+    answerGroup.className = 'answer-input-group-float';
+    answerGroup.innerHTML = `
+        <input type="text" class="answer-input-float" placeholder="إجابة" data-index="${index}">
+        <select class="answer-type-float">
+            <option value="match">🟢</option>
+            <option value="neutral" selected>🟡</option>
+            <option value="avoid">🔴</option>
+        </select>
+    `;
+    answersListFloat.appendChild(answerGroup);
+});
 const disconnectBtn = document.getElementById('disconnectBtn');
 const connectedChannel = document.getElementById('connectedChannel');
 const statusIndicator = document.getElementById('statusIndicator');
@@ -223,41 +252,28 @@ document.querySelectorAll('.mode-btn').forEach(btn => {
 });
 
 function updateAnswersUI() {
-    const answersContainer = document.getElementById('answersContainer');
-    const typeSelectors = document.querySelectorAll('.answer-type');
+    const typeSelectors = document.querySelectorAll('.answer-type-float');
     
     if (gameState.gameMode === 'colors') {
-        // Show color system
-        answersContainer.style.display = 'block';
+        // Show all options for colors mode
         typeSelectors.forEach(sel => {
             sel.style.display = 'block';
         });
-        // Update all inputs to show as match initially for colors mode
-        document.querySelectorAll('.answer-input').forEach(input => {
-            if (!input.value) {
-                const select = input.closest('.answer-input-group').querySelector('.answer-type');
-                if (select) {
-                    select.value = 'match'; // Default to green
-                }
-            }
-        });
     } else {
-        // Hide type selectors for match/avoid modes
-        answersContainer.style.display = 'block';
-        typeSelectors.forEach(sel => {
-            sel.style.display = 'none';
-            // Set value based on game mode
-            if (gameState.gameMode === 'match') {
-                sel.value = 'match';
-            } else if (gameState.gameMode === 'avoid') {
-                sel.value = 'avoid';
+        // For match/avoid modes, keep single answer and update type
+        typeSelectors.forEach((sel, index) => {
+            if (index === 0) {
+                sel.style.display = 'block';
+                if (gameState.gameMode === 'match') {
+                    sel.value = 'match';
+                } else if (gameState.gameMode === 'avoid') {
+                    sel.value = 'avoid';
+                }
+            } else {
+                // Remove extra answers for non-color modes
+                sel.closest('.answer-input-group-float').remove();
             }
         });
-        
-        // Keep only first answer for match/avoid
-        while (answersList.children.length > 1) {
-            answersList.removeChild(answersList.lastChild);
-        }
     }
 }
 
@@ -368,15 +384,15 @@ startGameBtn.addEventListener('click', () => {
         return;
     }
     
-    // Collect answers
-    const answerInputs = document.querySelectorAll('.answer-input');
+    // Collect answers from floating box
+    const answerInputs = document.querySelectorAll('.answer-input-float');
     const answers = [];
     
     answerInputs.forEach((input, index) => {
         const answer = input.value.trim();
         if (answer) {
-            const typeSelect = input.closest('.answer-input-group').querySelector('.answer-type');
-            const type = gameState.gameMode === 'colors' ? typeSelect.value : gameState.gameMode;
+            const typeSelect = input.closest('.answer-input-group-float').querySelector('.answer-type-float');
+            const type = typeSelect ? typeSelect.value : gameState.gameMode;
             answers.push({
                 text: answer.toLowerCase(),
                 type: type
@@ -385,7 +401,7 @@ startGameBtn.addEventListener('click', () => {
     });
     
     if (answers.length === 0) {
-        alert('الرجاء إدخال إجابة واحدة على الأقل');
+        alert('الرجاء إدخال إجابة واحدة على الأقل في الصندوق العائم');
         return;
     }
     
