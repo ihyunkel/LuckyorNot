@@ -22,9 +22,11 @@
                 <div class="answer-input-group-float">
                     <input type="text" class="answer-input-float" placeholder="إجابة" data-index="0">
                     <select class="answer-type-float">
-                        <option value="match">🟢</option>
-                        <option value="neutral" selected>🟡</option>
-                        <option value="avoid">🔴</option>
+                        <option value="super">💛 (+2)</option>
+                        <option value="match">🟢 (+1)</option>
+                        <option value="neutral" selected>🟡 (0)</option>
+                        <option value="avoid">🔴 (-1)</option>
+                        <option value="bad">⚫ (-2)</option>
                     </select>
                 </div>
             </div>
@@ -71,26 +73,6 @@
                             </svg>
                             تسجيل الدخول عبر Twitch
                         </button>
-                    </div>
-
-                    <!-- Manual Token Method -->
-                    <div class="auth-method">
-                        <h3 class="method-title">الطريقة اليدوية</h3>
-                        <p class="method-description">استخدام توكن مخصص</p>
-                        <button class="btn-secondary" id="showManualBtn">استخدام توكن يدوي</button>
-                        
-                        <div class="manual-form hidden" id="manualForm">
-                            <div class="form-group">
-                                <label for="channelName">اسم القناة</label>
-                                <input type="text" id="channelName" placeholder="اسم قناتك">
-                            </div>
-                            <div class="form-group">
-                                <label for="botToken">OAuth Token</label>
-                                <input type="password" id="botToken" placeholder="oauth:xxxxxxxxxxxxxxxxxxxxxx">
-                                <small class="help-text">احصل عليه من <a href="https://twitchapps.com/tmi/" target="_blank">twitchapps.com/tmi</a></small>
-                            </div>
-                            <button class="btn-primary" id="connectBtn">اتصال</button>
-                        </div>
                     </div>
                 </div>
             </div>
