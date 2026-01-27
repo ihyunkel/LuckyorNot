@@ -897,3 +897,133 @@ body::before {
 .result-points.bad {
     color: #888;
 }
+
+/* Setup Guide Styles */
+.setup-guide {
+    margin-top: 30px;
+}
+
+.info-box {
+    background: linear-gradient(135deg, rgba(0, 217, 255, 0.1), rgba(255, 0, 110, 0.1));
+    border: 2px solid var(--primary-color);
+    border-radius: 16px;
+    padding: 30px;
+    margin-bottom: 30px;
+}
+
+.info-box h3 {
+    color: var(--primary-color);
+    margin-bottom: 15px;
+    font-size: 1.5rem;
+}
+
+.info-box p {
+    margin-bottom: 20px;
+    line-height: 1.8;
+}
+
+.info-box ol {
+    list-style: none;
+    counter-reset: item;
+    padding: 0;
+}
+
+.info-box ol > li {
+    counter-increment: item;
+    margin-bottom: 20px;
+    padding-right: 40px;
+    position: relative;
+}
+
+.info-box ol > li::before {
+    content: counter(item);
+    position: absolute;
+    right: 0;
+    top: 0;
+    background: var(--primary-color);
+    color: var(--bg-darker);
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+}
+
+.info-box ul {
+    margin: 10px 0 10px 30px;
+    list-style: disc;
+}
+
+.info-box ul li {
+    margin: 8px 0;
+}
+
+.info-box code {
+    background: var(--bg-darker);
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 0.9rem;
+    color: var(--primary-color);
+    border: 1px solid var(--border-color);
+    display: inline-block;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.btn-copy {
+    background: var(--primary-color);
+    color: var(--bg-darker);
+    border: none;
+    padding: 4px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-right: 10px;
+    transition: var(--transition);
+}
+
+.btn-copy:hover {
+    background: var(--primary-dark);
+    transform: translateY(-2px);
+}
+
+.client-id-setup {
+    background: var(--bg-darker);
+    padding: 25px;
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+}
+
+.login-section {
+    margin-top: 30px;
+}
+
+.success-message {
+    background: linear-gradient(135deg, var(--success-color), #04CC83);
+    padding: 15px 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--bg-darker);
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.success-icon {
+    font-size: 1.5rem;
+}
+
+.btn-twitch {
+    background: linear-gradient(135deg, #9146FF, #772CE8) !important;
+    color: white !important;
+}
+
+.btn-twitch:hover {
+    background: linear-gradient(135deg, #772CE8, #5c1fcc) !important;
+}
