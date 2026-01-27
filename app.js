@@ -302,8 +302,7 @@ startGameBtn.addEventListener('click', () => {
     document.querySelector('.question-setup-card').style.display = 'none';
     resultsCard.classList.add('hidden');
     
-    gameState.client.say(gameState.channel, `🎮 ${question}`);
-    gameState.client.say(gameState.channel, `⏰ ${gameState.timeRemaining} ثانية`);
+    gameState.client.say(gameState.channel, `🎮 ${question} - ${gameState.timeRemaining} ثانية ⏰`);
     
     startTimer();
 });
@@ -420,29 +419,7 @@ function endCurrentGame() {
     
     displayResults(results);
     
-    gameState.client.say(gameState.channel, `━━━━━━━━━━━━━━━━━━━━━━`);
-    gameState.client.say(gameState.channel, `⏱️ انتهى الوقت! النتائج:`);
-    
-    const correctAnswersText = gameState.answers.map(a => {
-        let prefix = '';
-        if (a.type === 'super') prefix = '💛';
-        else if (a.type === 'match') prefix = '🟢';
-        else if (a.type === 'neutral') prefix = '🟡';
-        else if (a.type === 'avoid') prefix = '🔴';
-        else if (a.type === 'bad') prefix = '⚫';
-        else prefix = '🟡';
-        return `${prefix} ${a.text}`;
-    }).join(' | ');
-    
-    gameState.client.say(gameState.channel, `📋 الإجابات: ${correctAnswersText}`);
-    
-    const sortedResults = results.sort((a, b) => b.points - a.points).slice(0, 3);
-    sortedResults.forEach((r, i) => {
-        const medal = ['🥇', '🥈', '🥉'][i] || '🏅';
-        gameState.client.say(gameState.channel, `${medal} ${r.username}: ${r.points > 0 ? '+' : ''}${r.points} نقطة`);
-    });
-    
-    gameState.client.say(gameState.channel, `━━━━━━━━━━━━━━━━━━━━━━`);
+    gameState.client.say(gameState.channel, `⏱️ انتهى الوقت!`);
     
     gameState.currentGame = null;
     activeGameCard.classList.add('hidden');
