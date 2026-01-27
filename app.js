@@ -1,9 +1,29 @@
 // Twitch OAuth Configuration
 const TWITCH_CONFIG = {
-    clientId: 'ilf1p5tr7eydtaw36dje0q1a78e1cf', // سيتم توفير تعليمات للحصول عليه
+    clientId: localStorage.getItem('ilf1p5tr7eydtaw36dje0q1a78e1cf') || '',
     redirectUri: window.location.origin + window.location.pathname,
     scopes: ['chat:read', 'chat:edit']
 };
+
+// Normalize Arabic text for better matching
+function normalizeArabic(text) {
+    if (!text) return '';
+    return text
+        .toLowerCase()
+        .trim()
+        // Normalize Alef variations
+        .replace(/[أإآا]/g, 'ا')
+        // Normalize Taa Marbuta and Haa
+        .replace(/[ةه]/g, 'ه')
+        // Normalize Yaa variations
+        .replace(/[يى]/g, 'ي')
+        // Remove Tatweel
+        .replace(/ـ/g, '')
+        // Remove diacritics (Tashkeel)
+        .replace(/[\u064B-\u065F]/g, '')
+        // Remove extra spaces
+        .replace(/\s+/g, ' ');
+}
 
 // Game State
 let gameState = {
@@ -25,54 +45,114 @@ document.addEventListener('DOMContentLoaded', function() {
 // DOM Elements
 const setupSection = document.getElementById('setupSection');
 const gameSection = document.getElementById('gameSection');
+const setupGuide = document.getElementById('setupGuide');
+const loginSection = document.getElementById('loginSection');
+const clientIdInput = document.getElementById('clientIdInput');
+const saveClientIdBtn = document.getElementById('saveClientIdBtn');
 const twitchLoginBtn = document.getElementById('twitchLoginBtn');
-const showManualBtn = document.getElementById('showManualBtn');
-const manualForm = document.getElementById('manualForm');
-const channelNameInput = document.getElementById('channelName');
-const botTokenInput = document.getElementById('botToken');
-const connectBtn = document.getElementById('connectBtn');
-const disconnectBtn = document.getElementById('disconnectBtn');
-const connectedChannel = document.getElementById('connectedChannel');
-const statusIndicator = document.getElementById('statusIndicator');
+const resetClientIdBtn = document.getElementById('resetClientIdBtn');
+const redirectUrl = document.getElementById('redirectUrl');
 
-const questionText = document.getElementById('questionText');
-const gameDuration = document.getElementById('gameDuration');
-const answersList = document.getElementById('answersList');
-const addAnswerBtn = document.getElementById('addAnswerBtn');
-const startGameBtn = document.getElementById('startGameBtn');
+// Floating Secret Box Elements
+const secretToggle = document.getElementById('secretToggle');
+const secretContent = document.getElementById('secretContent');
+const secretAnswersFloat = document.querySelector('.secret-answers-float');
+const answersListFloat = document.getElementById('answersListFloat');
+const addAnswerFloatBtn = document.getElementById('addAnswerFloatBtn');
 
-const activeGameCard = document.getElementById('activeGameCard');
-const activeQuestion = document.getElementById('activeQuestion');
-const timerText = document.getElementById('timerText');
-const timerCircle = document.getElementById('timerCircle');
-const participantCount = document.getElementById('participantCount');
-const participantsList = document.getElementById('participantsList');
-const endGameBtn = document.getElementById('endGameBtn');
+// Toggle secret box
+secretToggle.addEventListener('click', () => {
+    secretAnswersFloat.classList.toggle('collapsed');
+    secretToggle.textContent = secretAnswersFloat.classList.contains('collapsed') ? '+' : '−';
+});
 
-const resultsCard = document.getElementById('resultsCard');
-const correctAnswers = document.getElementById('correctAnswers');
-const resultsList = document.getElementById('resultsList');
-const newRoundBtn = document.getElementById('newRoundBtn');
-
-const leaderboardList = document.getElementById('leaderboardList');
-const resetLeaderboardBtn = document.getElementById('resetLeaderboardBtn');
-
-const logoImage = document.getElementById('logoImage');
+// Add answer in floating box
+addAnswerFloatBtn.addEventListener('click', () => {
+    const index = answersListFloat.children.length;
+    const answerGroup = document.createElement('div');
+    answerGroup.className = 'answer-input-group-float';
+    answerGroup.innerHTML = `
+        <input type="text" class="answer-input-float" placeholder="إجابة" data-index="${index}">
+        <select class="answer-type-float">
+            <option value="super">💛 (+2)</option>
+            <option value="match">🟢 (+1)</option>
+            <option value="neutral" selected>🟡 (0)</option>
+            <option value="avoid">🔴 (-1)</option>
+            <option value="bad">⚫ (-2)</option>
+        </select>
+    `;
+    answersListFloat.appendChild(answerGroup);
+});
 
 // ============================================
-// Twitch OAuth Functions
+// OAuth Setup
 // ============================================
 
-// Show/Hide Manual Form
-showManualBtn.addEventListener('click', () => {
-    manualForm.classList.toggle('hidden');
+// Display redirect URL
+if (redirectUrl) {
+    redirectUrl.textContent = TWITCH_CONFIG.redirectUri;
+}
+
+// Copy redirect URL function
+window.copyRedirectUrl = function() {
+    navigator.clipboard.writeText(TWITCH_CONFIG.redirectUri).then(() => {
+        alert('تم نسخ الرابط!');
+    });
+};
+
+// Check if Client ID is saved
+if (TWITCH_CONFIG.clientId) {
+    setupGuide.classList.add('hidden');
+    loginSection.classList.remove('hidden');
+} else {
+    setupGuide.classList.remove('hidden');
+    loginSection.classList.add('hidden');
+}
+
+// Save Client ID
+saveClientIdBtn.addEventListener('click', () => {
+    const clientId = clientIdInput.value.trim();
+    if (!clientId) {
+        alert('الرجاء إدخال Client ID');
+        return;
+    }
+    
+    localStorage.setItem('ilf1p5tr7eydtaw36dje0q1a78e1cf', clientId);
+    TWITCH_CONFIG.clientId = clientId;
+    
+    setupGuide.classList.add('hidden');
+    loginSection.classList.remove('hidden');
+    
+    console.log('Client ID saved:', clientId.substring(0, 8) + '...');
+});
+
+// Reset Client ID
+resetClientIdBtn.addEventListener('click', () => {
+    if (confirm('هل تريد حذف Client ID المحفوظ؟')) {
+        localStorage.removeItem('ilf1p5tr7eydtaw36dje0q1a78e1cf');
+        TWITCH_CONFIG.clientId = '';
+        setupGuide.classList.remove('hidden');
+        loginSection.classList.add('hidden');
+        clientIdInput.value = '';
+        console.log('Client ID removed');
+    }
+});
+
+// Check if elements exist
+console.log('Setup elements check:', {
+    setupGuide: !!setupGuide,
+    loginSection: !!loginSection,
+    twitchLoginBtn: !!twitchLoginBtn,
+    clientIdSaved: !!TWITCH_CONFIG.clientId
 });
 
 // Twitch OAuth Login
 twitchLoginBtn.addEventListener('click', () => {
-    // Check if Client ID is configured
-    if (TWITCH_CONFIG.clientId === 'YOUR_CLIENT_ID_HERE') {
-        showClientIdSetupGuide();
+    console.log('Twitch Login button clicked!');
+    console.log('Client ID:', TWITCH_CONFIG.clientId);
+    
+    if (!TWITCH_CONFIG.clientId || TWITCH_CONFIG.clientId === '') {
+        alert('⚠️ يجب حفظ Client ID أولاً!\n\nالرجاء:\n1. إنشاء Twitch Application\n2. نسخ Client ID\n3. حفظه في الخانة أعلاه');
         return;
     }
     
@@ -82,6 +162,7 @@ twitchLoginBtn.addEventListener('click', () => {
         `response_type=token&` +
         `scope=${TWITCH_CONFIG.scopes.join('+')}`;
     
+    console.log('Redirecting to:', authUrl);
     window.location.href = authUrl;
 });
 
@@ -108,7 +189,7 @@ function handleOAuthCallback() {
         })
         .catch(error => {
             console.error('Error getting user info:', error);
-            alert('حدث خطأ في تسجيل الدخول. يرجى المحاولة مرة أخرى.');
+            alert('حدث خطأ في تسجيل الدخول. تحقق من Client ID أو جرب مرة أخرى.');
         });
         
         // Clean URL
@@ -119,9 +200,6 @@ function handleOAuthCallback() {
 // Connect using OAuth
 async function connectWithOAuth(username, token) {
     try {
-        twitchLoginBtn.disabled = true;
-        twitchLoginBtn.innerHTML = '<span style="margin-left: 10px;">⏳</span> جاري الاتصال...';
-        
         const client = new tmi.Client({
             options: { debug: false },
             identity: {
@@ -153,94 +231,78 @@ async function connectWithOAuth(username, token) {
     } catch (error) {
         console.error('Connection error:', error);
         alert('فشل الاتصال. يرجى المحاولة مرة أخرى.');
-        twitchLoginBtn.disabled = false;
-        twitchLoginBtn.innerHTML = `
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="margin-left: 10px;">
-                <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z"/>
-            </svg>
-            تسجيل الدخول عبر Twitch
-        `;
     }
 }
 
-// Show setup guide if Client ID not configured
-function showClientIdSetupGuide() {
-    const modal = document.createElement('div');
-    modal.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0,0,0,0.8);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-        padding: 20px;
-    `;
-    
-    modal.innerHTML = `
-        <div style="background: white; padding: 40px; border-radius: 20px; max-width: 600px; text-align: right; direction: rtl;">
-            <h2 style="color: #00A8E8; margin-bottom: 20px;">⚙️ إعداد التطبيق لأول مرة</h2>
-            <p style="line-height: 1.8; color: #333; margin-bottom: 20px;">
-                لاستخدام تسجيل الدخول السريع، تحتاج إلى إنشاء تطبيق Twitch مجاني. اتبع الخطوات التالية:
-            </p>
-            <ol style="text-align: right; line-height: 2; color: #555;">
-                <li>اذهب إلى <a href="https://dev.twitch.tv/console/apps" target="_blank" style="color: #9146FF;">dev.twitch.tv/console/apps</a></li>
-                <li>اضغط "Register Your Application"</li>
-                <li>املأ البيانات:
-                    <ul style="margin-top: 10px;">
-                        <li>Name: أنت وحظك</li>
-                        <li>OAuth Redirect URLs: <code style="background: #f0f0f0; padding: 2px 8px; border-radius: 4px;">${window.location.origin + window.location.pathname}</code></li>
-                        <li>Category: Chat Bot</li>
-                    </ul>
-                </li>
-                <li>احصل على Client ID وضعه في ملف <code>app.js</code></li>
-            </ol>
-            <p style="background: #E3F4FF; padding: 15px; border-radius: 10px; margin-top: 20px; color: #0077B6;">
-                💡 <strong>بديل سريع:</strong> يمكنك استخدام "الطريقة اليدوية" أدناه بدون إعداد!
-            </p>
-            <button onclick="this.parentElement.parentElement.remove()" 
-                    style="background: #00A8E8; color: white; border: none; padding: 12px 30px; 
-                           border-radius: 10px; font-size: 16px; cursor: pointer; margin-top: 20px; font-weight: 700;">
-                فهمت
-            </button>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
+// Check for OAuth callback on page load
+if (window.location.hash.includes('access_token')) {
+    handleOAuthCallback();
 }
 
-// Mode Selection
-document.querySelectorAll('.mode-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        gameState.gameMode = btn.dataset.mode;
-        updateAnswersUI();
-    });
+// ============================================
+const disconnectBtn = document.getElementById('disconnectBtn');
+const connectedChannel = document.getElementById('connectedChannel');
+const statusIndicator = document.getElementById('statusIndicator');
+
+const questionText = document.getElementById('questionText');
+const gameDuration = document.getElementById('gameDuration');
+const answersList = document.getElementById('answersList');
+const addAnswerBtn = document.getElementById('addAnswerBtn');
+const startGameBtn = document.getElementById('startGameBtn');
+
+const activeGameCard = document.getElementById('activeGameCard');
+const activeQuestion = document.getElementById('activeQuestion');
+const timerText = document.getElementById('timerText');
+const timerCircle = document.getElementById('timerCircle');
+const participantCount = document.getElementById('participantCount');
+const participantsList = document.getElementById('participantsList');
+const endGameBtn = document.getElementById('endGameBtn');
+
+const resultsCard = document.getElementById('resultsCard');
+const correctAnswers = document.getElementById('correctAnswers');
+const resultsList = document.getElementById('resultsList');
+const newRoundBtn = document.getElementById('newRoundBtn');
+
+const leaderboardList = document.getElementById('leaderboardList');
+const resetLeaderboardBtn = document.getElementById('resetLeaderboardBtn');
+
+const logoImage = document.getElementById('logoImage');
+
 });
 
 function updateAnswersUI() {
-    const answersContainer = document.getElementById('answersContainer');
+    const typeSelectors = document.querySelectorAll('.answer-type-float');
+    const answerGroups = document.querySelectorAll('.answer-input-group-float');
+    
     if (gameState.gameMode === 'colors') {
-        answersContainer.style.display = 'block';
-    } else {
-        answersContainer.style.display = 'block';
-        // Clear to single answer for match/avoid modes
-        if (answersList.children.length > 1) {
-            while (answersList.children.length > 1) {
-                answersList.removeChild(answersList.lastChild);
-            }
-        }
-        // Hide type selector for non-color modes
-        const typeSelectors = answersList.querySelectorAll('.answer-type');
+        // Show all options for colors mode - all selectors visible
         typeSelectors.forEach(sel => {
-            if (gameState.gameMode === 'colors') {
-                sel.style.display = 'block';
-            } else {
+            sel.style.display = 'block';
+            // Reset to default for colors
+            if (sel.value !== 'super' && sel.value !== 'match' && sel.value !== 'neutral' && sel.value !== 'avoid' && sel.value !== 'bad') {
+                sel.value = 'neutral';
+            }
+        });
+    } else if (gameState.gameMode === 'match') {
+        // For match mode: keep only first answer, hide selector, set to match
+        typeSelectors.forEach((sel, index) => {
+            if (index === 0) {
                 sel.style.display = 'none';
+                sel.value = 'match';
+            } else {
+                // Remove extra answers
+                answerGroups[index]?.remove();
+            }
+        });
+    } else if (gameState.gameMode === 'avoid') {
+        // For avoid mode: keep only first answer, hide selector, set to avoid
+        typeSelectors.forEach((sel, index) => {
+            if (index === 0) {
+                sel.style.display = 'none';
+                sel.value = 'avoid';
+            } else {
+                // Remove extra answers
+                answerGroups[index]?.remove();
             }
         });
     }
@@ -274,55 +336,6 @@ document.querySelectorAll('.btn-remove-answer').forEach(btn => {
 });
 
 // Connect to Twitch
-connectBtn.addEventListener('click', async () => {
-    const channel = channelNameInput.value.trim().toLowerCase();
-    const token = botTokenInput.value.trim();
-    
-    if (!channel || !token) {
-        alert('الرجاء إدخال اسم القناة والتوكن');
-        return;
-    }
-    
-    try {
-        connectBtn.disabled = true;
-        connectBtn.textContent = 'جاري الاتصال...';
-        
-        const client = new tmi.Client({
-            options: { debug: false },
-            identity: {
-                username: 'your_bot_username',
-                password: token
-            },
-            channels: [channel]
-        });
-        
-        client.on('message', handleMessage);
-        client.on('connected', () => {
-            gameState.isConnected = true;
-            gameState.channel = channel;
-            gameState.client = client;
-            
-            setupSection.classList.add('hidden');
-            gameSection.classList.remove('hidden');
-            connectedChannel.textContent = channel;
-            
-            client.say(channel, '🎮 بوت "أنت وحظك" متصل الآن! استعدوا للعب!');
-        });
-        
-        client.on('disconnected', () => {
-            gameState.isConnected = false;
-            handleDisconnect();
-        });
-        
-        await client.connect();
-    } catch (error) {
-        console.error('Connection error:', error);
-        alert('فشل الاتصال. تحقق من التوكن واسم القناة.');
-        connectBtn.disabled = false;
-        connectBtn.textContent = 'اتصال بالقناة';
-    }
-});
-
 // Disconnect
 disconnectBtn.addEventListener('click', () => {
     if (gameState.client) {
@@ -353,24 +366,24 @@ startGameBtn.addEventListener('click', () => {
         return;
     }
     
-    // Collect answers
-    const answerInputs = document.querySelectorAll('.answer-input');
+    // Collect answers from floating box
+    const answerInputs = document.querySelectorAll('.answer-input-float');
     const answers = [];
     
     answerInputs.forEach((input, index) => {
         const answer = input.value.trim();
         if (answer) {
-            const typeSelect = input.closest('.answer-input-group').querySelector('.answer-type');
-            const type = gameState.gameMode === 'colors' ? typeSelect.value : gameState.gameMode;
+            const typeSelect = input.closest('.answer-input-group-float').querySelector('.answer-type-float');
+            const type = typeSelect ? typeSelect.value : gameState.gameMode;
             answers.push({
-                text: answer.toLowerCase(),
+                text: normalizeArabic(answer), // Normalize the answer
                 type: type
             });
         }
     });
     
     if (answers.length === 0) {
-        alert('الرجاء إدخال إجابة واحدة على الأقل');
+        alert('الرجاء إدخال إجابة واحدة على الأقل في الصندوق العائم');
         return;
     }
     
@@ -392,12 +405,8 @@ startGameBtn.addEventListener('click', () => {
     resultsCard.classList.add('hidden');
     
     // Send to chat
-    gameState.client.say(gameState.channel, `━━━━━━━━━━━━━━━━━━━━━━`);
-    gameState.client.say(gameState.channel, `🎮 جولة جديدة من "أنت وحظك"!`);
-    gameState.client.say(gameState.channel, `❓ السؤال: ${question}`);
-    gameState.client.say(gameState.channel, `⏰ لديكم ${gameState.timeRemaining} ثانية للإجابة!`);
-    gameState.client.say(gameState.channel, `📝 اكتبوا إجابتكم في الشات الآن!`);
-    gameState.client.say(gameState.channel, `━━━━━━━━━━━━━━━━━━━━━━`);
+    gameState.client.say(gameState.channel, `🎮 ${question}`);
+    gameState.client.say(gameState.channel, `⏰ ${gameState.timeRemaining} ثانية`);
     
     startTimer();
 });
@@ -429,19 +438,55 @@ function updateTimerDisplay() {
 
 // Handle Messages
 function handleMessage(channel, tags, message, self) {
-    if (self || !gameState.currentGame) return;
+    if (self) return;
     
     const username = tags['display-name'] || tags.username;
-    const answer = message.trim().toLowerCase();
+    const messageText = message.trim();
+    
+    // Handle !توب command
+    if (messageText === '!توب' || messageText === '!top') {
+        sendLeaderboardToChat();
+        return;
+    }
+    
+    // If no active game, ignore
+    if (!gameState.currentGame) return;
     
     // Check if already participated
     if (gameState.participants.has(username)) {
         return;
     }
     
-    // Record participation
-    gameState.participants.set(username, answer);
+    // Normalize and record participation
+    const normalizedAnswer = normalizeArabic(messageText);
+    gameState.participants.set(username, normalizedAnswer);
     updateParticipantsList();
+}
+
+// Send leaderboard to chat
+function sendLeaderboardToChat() {
+    if (!gameState.client || !gameState.isConnected) return;
+    
+    const sorted = Array.from(gameState.leaderboard.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10);
+    
+    if (sorted.length === 0) {
+        gameState.client.say(gameState.channel, '📊 لا توجد نتائج حالياً');
+        return;
+    }
+    
+    gameState.client.say(gameState.channel, '👑 ═══ لوحة المتصدرين ═══ 👑');
+    
+    sorted.forEach(([player, score], index) => {
+        let medal = '';
+        if (index === 0) medal = '🥇';
+        else if (index === 1) medal = '🥈';
+        else if (index === 2) medal = '🥉';
+        else medal = `${index + 1}.`;
+        
+        gameState.client.say(gameState.channel, `${medal} ${player}: ${score} نقطة`);
+    });
 }
 
 function updateParticipantsList() {
@@ -492,9 +537,12 @@ function endCurrentGame() {
     // Display correct answers
     const correctAnswersText = gameState.answers.map(a => {
         let prefix = '';
-        if (a.type === 'match') prefix = '✅';
-        else if (a.type === 'avoid') prefix = '❌';
-        else prefix = '⚪';
+        if (a.type === 'super') prefix = '💛';
+        else if (a.type === 'match') prefix = '🟢';
+        else if (a.type === 'neutral') prefix = '🟡';
+        else if (a.type === 'avoid') prefix = '🔴';
+        else if (a.type === 'bad') prefix = '⚫';
+        else prefix = '🟡';
         return `${prefix} ${a.text}`;
     }).join(' | ');
     
@@ -515,12 +563,24 @@ function endCurrentGame() {
 }
 
 function evaluateAnswer(userAnswer) {
+    // Normalize user answer for comparison
+    const normalizedUserAnswer = normalizeArabic(userAnswer);
+    
     for (const answer of gameState.answers) {
-        if (userAnswer === answer.text) {
-            if (gameState.gameMode === 'match' || answer.type === 'match') {
+        const normalizedCorrectAnswer = normalizeArabic(answer.text);
+        
+        if (normalizedUserAnswer === normalizedCorrectAnswer) {
+            // Check answer type
+            if (answer.type === 'super') {
+                return { points: 2, type: 'super' };
+            } else if (gameState.gameMode === 'match' || answer.type === 'match') {
                 return { points: 1, type: 'correct' };
+            } else if (answer.type === 'neutral') {
+                return { points: 0, type: 'neutral' };
             } else if (gameState.gameMode === 'avoid' || answer.type === 'avoid') {
                 return { points: -1, type: 'incorrect' };
+            } else if (answer.type === 'bad') {
+                return { points: -2, type: 'bad' };
             } else {
                 return { points: 0, type: 'neutral' };
             }
@@ -541,9 +601,12 @@ function displayResults(results) {
     // Show correct answers
     const answersText = gameState.answers.map(a => {
         let label = '';
-        if (a.type === 'match') label = 'أخضر (+1)';
-        else if (a.type === 'avoid') label = 'أحمر (-1)';
-        else label = 'أصفر (0)';
+        if (a.type === 'super') label = '💛 ذهبي (+2)';
+        else if (a.type === 'match') label = '🟢 أخضر (+1)';
+        else if (a.type === 'neutral') label = '🟡 أصفر (0)';
+        else if (a.type === 'avoid') label = '🔴 أحمر (-1)';
+        else if (a.type === 'bad') label = '⚫ أسود (-2)';
+        else label = '🟡 أصفر (0)';
         return `<span style="margin-left: 15px;"><strong>${a.text}</strong> - ${label}</span>`;
     }).join('');
     
