@@ -178,19 +178,5 @@
 
     <script src="tmi.min.js"></script>
 <script src="app.js"></script>
-    <script>
-        // Check if tmi.js loaded, if not try alternative CDN
-        if (typeof tmi === 'undefined') {
-            console.error('Failed to load tmi.js from jsdelivr, trying alternative...');
-            const script = document.createElement('script');
-            script.src = 'https://unpkg.com/tmi.js@1.8.5/dist/tmi.min.js';
-            script.onerror = function() {
-                console.error('Failed to load tmi.js from all sources');
-                alert('فشل تحميل مكتبة الاتصال بـ Twitch. يرجى التحقق من اتصال الإنترنت أو المحاولة لاحقاً.');
-            };
-            document.head.appendChild(script);
-        }
-    </script>
-    <script src="app.js"></script>
 </body>
 </html>
