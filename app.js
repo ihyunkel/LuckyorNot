@@ -1,6 +1,6 @@
 // Twitch OAuth Configuration
 const TWITCH_CONFIG = {
-    clientId: localStorage.getItem('ilf1p5tr7eydtaw36dje0q1a78e1cf') || '',
+    clientId: localStorage.getItem('twitch_client_id') || '',
     redirectUri: window.location.origin + window.location.pathname,
     scopes: ['chat:read', 'chat:edit']
 };
@@ -11,25 +11,19 @@ function normalizeArabic(text) {
     return text
         .toLowerCase()
         .trim()
-        // Normalize Alef variations
         .replace(/[أإآا]/g, 'ا')
-        // Normalize Taa Marbuta and Haa
         .replace(/[ةه]/g, 'ه')
-        // Normalize Yaa variations
         .replace(/[يى]/g, 'ي')
-        // Remove Tatweel
         .replace(/ـ/g, '')
-        // Remove diacritics (Tashkeel)
         .replace(/[\u064B-\u065F]/g, '')
-        // Remove extra spaces
         .replace(/\s+/g, ' ');
 }
 
 // Game State
-let gameState = {
-    channel: '',
-    client: null,
+const gameState = {
     isConnected: false,
+    client: null,
+    channel: '',
     currentGame: null,
     gameMode: 'match',
     answers: [],
@@ -53,54 +47,52 @@ const twitchLoginBtn = document.getElementById('twitchLoginBtn');
 const resetClientIdBtn = document.getElementById('resetClientIdBtn');
 const redirectUrl = document.getElementById('redirectUrl');
 
-// Floating Secret Box Elements
 const secretToggle = document.getElementById('secretToggle');
 const secretContent = document.getElementById('secretContent');
 const secretAnswersFloat = document.querySelector('.secret-answers-float');
 const answersListFloat = document.getElementById('answersListFloat');
 const addAnswerFloatBtn = document.getElementById('addAnswerFloatBtn');
 
-// Toggle secret box
-secretToggle.addEventListener('click', () => {
-    secretAnswersFloat.classList.toggle('collapsed');
-    secretToggle.textContent = secretAnswersFloat.classList.contains('collapsed') ? '+' : '−';
-});
+const disconnectBtn = document.getElementById('disconnectBtn');
+const connectedChannel = document.getElementById('connectedChannel');
+const statusIndicator = document.getElementById('statusIndicator');
 
-// Add answer in floating box
-addAnswerFloatBtn.addEventListener('click', () => {
-    const index = answersListFloat.children.length;
-    const answerGroup = document.createElement('div');
-    answerGroup.className = 'answer-input-group-float';
-    answerGroup.innerHTML = `
-        <input type="text" class="answer-input-float" placeholder="إجابة" data-index="${index}">
-        <select class="answer-type-float">
-            <option value="super">💛 (+2)</option>
-            <option value="match">🟢 (+1)</option>
-            <option value="neutral" selected>🟡 (0)</option>
-            <option value="avoid">🔴 (-1)</option>
-            <option value="bad">⚫ (-2)</option>
-        </select>
-    `;
-    answersListFloat.appendChild(answerGroup);
-});
+const questionText = document.getElementById('questionText');
+const gameDuration = document.getElementById('gameDuration');
+const startGameBtn = document.getElementById('startGameBtn');
+
+const activeGameCard = document.getElementById('activeGameCard');
+const activeQuestion = document.getElementById('activeQuestion');
+const timerText = document.getElementById('timerText');
+const timerCircle = document.getElementById('timerCircle');
+const participantCount = document.getElementById('participantCount');
+const participantsList = document.getElementById('participantsList');
+const endGameBtn = document.getElementById('endGameBtn');
+
+const resultsCard = document.getElementById('resultsCard');
+const correctAnswers = document.getElementById('correctAnswers');
+const resultsList = document.getElementById('resultsList');
+const newRoundBtn = document.getElementById('newRoundBtn');
+
+const leaderboardList = document.getElementById('leaderboardList');
+const resetLeaderboardBtn = document.getElementById('resetLeaderboardBtn');
+
+const logoImage = document.getElementById('logoImage');
 
 // ============================================
 // OAuth Setup
 // ============================================
 
-// Display redirect URL
 if (redirectUrl) {
     redirectUrl.textContent = TWITCH_CONFIG.redirectUri;
 }
 
-// Copy redirect URL function
 window.copyRedirectUrl = function() {
     navigator.clipboard.writeText(TWITCH_CONFIG.redirectUri).then(() => {
         alert('تم نسخ الرابط!');
     });
 };
 
-// Check if Client ID is saved
 if (TWITCH_CONFIG.clientId) {
     setupGuide.classList.add('hidden');
     loginSection.classList.remove('hidden');
@@ -109,7 +101,6 @@ if (TWITCH_CONFIG.clientId) {
     loginSection.classList.add('hidden');
 }
 
-// Save Client ID
 saveClientIdBtn.addEventListener('click', () => {
     const clientId = clientIdInput.value.trim();
     if (!clientId) {
@@ -117,7 +108,7 @@ saveClientIdBtn.addEventListener('click', () => {
         return;
     }
     
-    localStorage.setItem('ilf1p5tr7eydtaw36dje0q1a78e1cf', clientId);
+    localStorage.setItem('twitch_client_id', clientId);
     TWITCH_CONFIG.clientId = clientId;
     
     setupGuide.classList.add('hidden');
@@ -126,10 +117,9 @@ saveClientIdBtn.addEventListener('click', () => {
     console.log('Client ID saved:', clientId.substring(0, 8) + '...');
 });
 
-// Reset Client ID
 resetClientIdBtn.addEventListener('click', () => {
     if (confirm('هل تريد حذف Client ID المحفوظ؟')) {
-        localStorage.removeItem('ilf1p5tr7eydtaw36dje0q1a78e1cf');
+        localStorage.removeItem('twitch_client_id');
         TWITCH_CONFIG.clientId = '';
         setupGuide.classList.remove('hidden');
         loginSection.classList.add('hidden');
@@ -138,7 +128,6 @@ resetClientIdBtn.addEventListener('click', () => {
     }
 });
 
-// Check if elements exist
 console.log('Setup elements check:', {
     setupGuide: !!setupGuide,
     loginSection: !!loginSection,
@@ -146,7 +135,6 @@ console.log('Setup elements check:', {
     clientIdSaved: !!TWITCH_CONFIG.clientId
 });
 
-// Twitch OAuth Login
 twitchLoginBtn.addEventListener('click', () => {
     console.log('Twitch Login button clicked!');
     console.log('Client ID:', TWITCH_CONFIG.clientId);
@@ -166,14 +154,12 @@ twitchLoginBtn.addEventListener('click', () => {
     window.location.href = authUrl;
 });
 
-// Handle OAuth Callback
 function handleOAuthCallback() {
     const hash = window.location.hash.substring(1);
     const params = new URLSearchParams(hash);
     const accessToken = params.get('access_token');
     
     if (accessToken) {
-        // Get user info
         fetch('https://api.twitch.tv/helix/users', {
             headers: {
                 'Authorization': `Bearer ${accessToken}`,
@@ -192,12 +178,10 @@ function handleOAuthCallback() {
             alert('حدث خطأ في تسجيل الدخول. تحقق من Client ID أو جرب مرة أخرى.');
         });
         
-        // Clean URL
         window.history.replaceState({}, document.title, window.location.pathname);
     }
 }
 
-// Connect using OAuth
 async function connectWithOAuth(username, token) {
     try {
         const client = new tmi.Client({
@@ -234,40 +218,47 @@ async function connectWithOAuth(username, token) {
     }
 }
 
-// Check for OAuth callback on page load
 if (window.location.hash.includes('access_token')) {
     handleOAuthCallback();
 }
 
 // ============================================
-const disconnectBtn = document.getElementById('disconnectBtn');
-const connectedChannel = document.getElementById('connectedChannel');
-const statusIndicator = document.getElementById('statusIndicator');
+// Floating Secret Box
+// ============================================
 
-const questionText = document.getElementById('questionText');
-const gameDuration = document.getElementById('gameDuration');
-const answersList = document.getElementById('answersList');
-const addAnswerBtn = document.getElementById('addAnswerBtn');
-const startGameBtn = document.getElementById('startGameBtn');
+secretToggle.addEventListener('click', () => {
+    secretAnswersFloat.classList.toggle('collapsed');
+    secretToggle.textContent = secretAnswersFloat.classList.contains('collapsed') ? '+' : '−';
+});
 
-const activeGameCard = document.getElementById('activeGameCard');
-const activeQuestion = document.getElementById('activeQuestion');
-const timerText = document.getElementById('timerText');
-const timerCircle = document.getElementById('timerCircle');
-const participantCount = document.getElementById('participantCount');
-const participantsList = document.getElementById('participantsList');
-const endGameBtn = document.getElementById('endGameBtn');
+addAnswerFloatBtn.addEventListener('click', () => {
+    const index = answersListFloat.children.length;
+    const answerGroup = document.createElement('div');
+    answerGroup.className = 'answer-input-group-float';
+    answerGroup.innerHTML = `
+        <input type="text" class="answer-input-float" placeholder="إجابة" data-index="${index}">
+        <select class="answer-type-float">
+            <option value="super">💛 (+2)</option>
+            <option value="match">🟢 (+1)</option>
+            <option value="neutral" selected>🟡 (0)</option>
+            <option value="avoid">🔴 (-1)</option>
+            <option value="bad">⚫ (-2)</option>
+        </select>
+    `;
+    answersListFloat.appendChild(answerGroup);
+});
 
-const resultsCard = document.getElementById('resultsCard');
-const correctAnswers = document.getElementById('correctAnswers');
-const resultsList = document.getElementById('resultsList');
-const newRoundBtn = document.getElementById('newRoundBtn');
+// ============================================
+// Game Mode Selection
+// ============================================
 
-const leaderboardList = document.getElementById('leaderboardList');
-const resetLeaderboardBtn = document.getElementById('resetLeaderboardBtn');
-
-const logoImage = document.getElementById('logoImage');
-
+document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        gameState.gameMode = btn.dataset.mode;
+        updateAnswersUI();
+    });
 });
 
 function updateAnswersUI() {
@@ -275,68 +266,34 @@ function updateAnswersUI() {
     const answerGroups = document.querySelectorAll('.answer-input-group-float');
     
     if (gameState.gameMode === 'colors') {
-        // Show all options for colors mode - all selectors visible
         typeSelectors.forEach(sel => {
             sel.style.display = 'block';
-            // Reset to default for colors
-            if (sel.value !== 'super' && sel.value !== 'match' && sel.value !== 'neutral' && sel.value !== 'avoid' && sel.value !== 'bad') {
-                sel.value = 'neutral';
-            }
         });
     } else if (gameState.gameMode === 'match') {
-        // For match mode: keep only first answer, hide selector, set to match
         typeSelectors.forEach((sel, index) => {
             if (index === 0) {
                 sel.style.display = 'none';
                 sel.value = 'match';
             } else {
-                // Remove extra answers
                 answerGroups[index]?.remove();
             }
         });
     } else if (gameState.gameMode === 'avoid') {
-        // For avoid mode: keep only first answer, hide selector, set to avoid
         typeSelectors.forEach((sel, index) => {
             if (index === 0) {
                 sel.style.display = 'none';
                 sel.value = 'avoid';
             } else {
-                // Remove extra answers
                 answerGroups[index]?.remove();
             }
         });
     }
 }
 
-// Add Answer Button
-addAnswerBtn.addEventListener('click', () => {
-    const answerGroup = document.createElement('div');
-    answerGroup.className = 'answer-input-group';
-    answerGroup.innerHTML = `
-        <input type="text" class="answer-input" placeholder="إجابة إضافية" data-type="neutral">
-        <select class="answer-type" ${gameState.gameMode !== 'colors' ? 'style="display:none"' : ''}>
-            <option value="match">أخضر (+1)</option>
-            <option value="neutral" selected>أصفر (0)</option>
-            <option value="avoid">أحمر (-1)</option>
-        </select>
-        <button class="btn-remove-answer">×</button>
-    `;
-    answersList.appendChild(answerGroup);
-    
-    answerGroup.querySelector('.btn-remove-answer').addEventListener('click', () => {
-        answerGroup.remove();
-    });
-});
-
-// Initial setup for remove buttons
-document.querySelectorAll('.btn-remove-answer').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        e.target.closest('.answer-input-group').remove();
-    });
-});
-
-// Connect to Twitch
+// ============================================
 // Disconnect
+// ============================================
+
 disconnectBtn.addEventListener('click', () => {
     if (gameState.client) {
         gameState.client.disconnect();
@@ -345,19 +302,20 @@ disconnectBtn.addEventListener('click', () => {
 });
 
 function handleDisconnect() {
-    setupSection.classList.remove('hidden');
-    gameSection.classList.add('hidden');
     gameState.isConnected = false;
     gameState.client = null;
-    connectBtn.disabled = false;
-    connectBtn.textContent = 'اتصال بالقناة';
+    gameState.channel = '';
     
-    if (gameState.currentGame) {
-        endCurrentGame();
-    }
+    setupSection.classList.remove('hidden');
+    gameSection.classList.add('hidden');
+    activeGameCard.classList.add('hidden');
+    resultsCard.classList.add('hidden');
 }
 
+// ============================================
 // Start Game
+// ============================================
+
 startGameBtn.addEventListener('click', () => {
     const question = questionText.value.trim();
     
@@ -366,7 +324,6 @@ startGameBtn.addEventListener('click', () => {
         return;
     }
     
-    // Collect answers from floating box
     const answerInputs = document.querySelectorAll('.answer-input-float');
     const answers = [];
     
@@ -376,7 +333,7 @@ startGameBtn.addEventListener('click', () => {
             const typeSelect = input.closest('.answer-input-group-float').querySelector('.answer-type-float');
             const type = typeSelect ? typeSelect.value : gameState.gameMode;
             answers.push({
-                text: normalizeArabic(answer), // Normalize the answer
+                text: normalizeArabic(answer),
                 type: type
             });
         }
@@ -391,36 +348,36 @@ startGameBtn.addEventListener('click', () => {
     gameState.participants.clear();
     gameState.timeRemaining = parseInt(gameDuration.value);
     
-    // Start game
     gameState.currentGame = {
         question: question,
         answers: answers,
         startTime: Date.now()
     };
     
-    // UI Updates
     activeQuestion.textContent = question;
     activeGameCard.classList.remove('hidden');
     document.querySelector('.question-setup-card').style.display = 'none';
     resultsCard.classList.add('hidden');
     
-    // Send to chat
     gameState.client.say(gameState.channel, `🎮 ${question}`);
     gameState.client.say(gameState.channel, `⏰ ${gameState.timeRemaining} ثانية`);
     
     startTimer();
 });
 
-// Timer
 function startTimer() {
+    const totalTime = gameState.timeRemaining;
     const circumference = 2 * Math.PI * 35;
-    timerCircle.style.strokeDasharray = circumference;
     
-    updateTimerDisplay();
+    timerCircle.style.strokeDasharray = circumference;
     
     gameState.timer = setInterval(() => {
         gameState.timeRemaining--;
-        updateTimerDisplay();
+        timerText.textContent = gameState.timeRemaining;
+        
+        const progress = gameState.timeRemaining / totalTime;
+        const offset = circumference * (1 - progress);
+        timerCircle.style.strokeDashoffset = offset;
         
         if (gameState.timeRemaining <= 0) {
             endCurrentGame();
@@ -428,42 +385,32 @@ function startTimer() {
     }, 1000);
 }
 
-function updateTimerDisplay() {
-    timerText.textContent = gameState.timeRemaining;
-    const circumference = 2 * Math.PI * 35;
-    const duration = parseInt(gameDuration.value);
-    const progress = (gameState.timeRemaining / duration) * circumference;
-    timerCircle.style.strokeDashoffset = circumference - progress;
-}
-
+// ============================================
 // Handle Messages
+// ============================================
+
 function handleMessage(channel, tags, message, self) {
     if (self) return;
     
     const username = tags['display-name'] || tags.username;
     const messageText = message.trim();
     
-    // Handle !توب command
     if (messageText === '!توب' || messageText === '!top') {
         sendLeaderboardToChat();
         return;
     }
     
-    // If no active game, ignore
     if (!gameState.currentGame) return;
     
-    // Check if already participated
     if (gameState.participants.has(username)) {
         return;
     }
     
-    // Normalize and record participation
     const normalizedAnswer = normalizeArabic(messageText);
     gameState.participants.set(username, normalizedAnswer);
     updateParticipantsList();
 }
 
-// Send leaderboard to chat
 function sendLeaderboardToChat() {
     if (!gameState.client || !gameState.isConnected) return;
     
@@ -491,17 +438,20 @@ function sendLeaderboardToChat() {
 
 function updateParticipantsList() {
     participantCount.textContent = gameState.participants.size;
-    participantsList.innerHTML = '';
     
+    participantsList.innerHTML = '';
     gameState.participants.forEach((answer, username) => {
-        const badge = document.createElement('div');
+        const badge = document.createElement('span');
         badge.className = 'participant-badge';
         badge.textContent = username;
         participantsList.appendChild(badge);
     });
 }
 
+// ============================================
 // End Game
+// ============================================
+
 endGameBtn.addEventListener('click', () => {
     endCurrentGame();
 });
@@ -511,7 +461,6 @@ function endCurrentGame() {
     
     clearInterval(gameState.timer);
     
-    // Calculate results
     const results = [];
     gameState.participants.forEach((answer, username) => {
         const result = evaluateAnswer(answer);
@@ -522,19 +471,15 @@ function endCurrentGame() {
             type: result.type
         });
         
-        // Update leaderboard
         const currentScore = gameState.leaderboard.get(username) || 0;
         gameState.leaderboard.set(username, currentScore + result.points);
     });
     
-    // Display results
     displayResults(results);
     
-    // Send to chat
     gameState.client.say(gameState.channel, `━━━━━━━━━━━━━━━━━━━━━━`);
     gameState.client.say(gameState.channel, `⏱️ انتهى الوقت! النتائج:`);
     
-    // Display correct answers
     const correctAnswersText = gameState.answers.map(a => {
         let prefix = '';
         if (a.type === 'super') prefix = '💛';
@@ -548,7 +493,6 @@ function endCurrentGame() {
     
     gameState.client.say(gameState.channel, `📋 الإجابات: ${correctAnswersText}`);
     
-    // Show top 3
     const sortedResults = results.sort((a, b) => b.points - a.points).slice(0, 3);
     sortedResults.forEach((r, i) => {
         const medal = ['🥇', '🥈', '🥉'][i] || '🏅';
@@ -563,14 +507,12 @@ function endCurrentGame() {
 }
 
 function evaluateAnswer(userAnswer) {
-    // Normalize user answer for comparison
     const normalizedUserAnswer = normalizeArabic(userAnswer);
     
     for (const answer of gameState.answers) {
         const normalizedCorrectAnswer = normalizeArabic(answer.text);
         
         if (normalizedUserAnswer === normalizedCorrectAnswer) {
-            // Check answer type
             if (answer.type === 'super') {
                 return { points: 2, type: 'super' };
             } else if (gameState.gameMode === 'match' || answer.type === 'match') {
@@ -587,7 +529,6 @@ function evaluateAnswer(userAnswer) {
         }
     }
     
-    // No match found
     if (gameState.gameMode === 'match') {
         return { points: 0, type: 'neutral' };
     } else if (gameState.gameMode === 'avoid') {
@@ -598,7 +539,6 @@ function evaluateAnswer(userAnswer) {
 }
 
 function displayResults(results) {
-    // Show correct answers
     const answersText = gameState.answers.map(a => {
         let label = '';
         if (a.type === 'super') label = '💛 ذهبي (+2)';
@@ -610,49 +550,32 @@ function displayResults(results) {
         return `<span style="margin-left: 15px;"><strong>${a.text}</strong> - ${label}</span>`;
     }).join('');
     
-    correctAnswers.innerHTML = `<strong>الإجابات الصحيحة:</strong><br>${answersText}`;
+    correctAnswers.innerHTML = answersText;
     
-    // Display results list
     resultsList.innerHTML = '';
-    results.sort((a, b) => b.points - a.points).forEach(result => {
+    results.forEach(r => {
         const item = document.createElement('div');
-        item.className = `result-item ${result.type}`;
+        item.className = `result-item ${r.type}`;
         item.innerHTML = `
             <div>
-                <span class="result-player">${result.username}</span>
-                <span class="result-answer">(${result.answer})</span>
+                <span class="result-player">${r.username}</span>
+                <span class="result-answer">(${r.answer})</span>
             </div>
-            <span class="result-points ${result.points > 0 ? 'positive' : result.points < 0 ? 'negative' : 'zero'}">
-                ${result.points > 0 ? '+' : ''}${result.points}
+            <span class="result-points ${r.points > 0 ? 'positive' : r.points < 0 ? 'negative' : 'zero'}">
+                ${r.points > 0 ? '+' : ''}${r.points}
             </span>
         `;
         resultsList.appendChild(item);
     });
     
     resultsCard.classList.remove('hidden');
+    document.querySelector('.question-setup-card').style.display = 'block';
 }
 
-// New Round
-newRoundBtn.addEventListener('click', () => {
-    resultsCard.classList.add('hidden');
-    document.querySelector('.question-setup-card').style.display = 'block';
-    questionText.value = '';
-    
-    // Reset answers
-    answersList.innerHTML = `
-        <div class="answer-input-group">
-            <input type="text" class="answer-input" placeholder="الإجابة الأولى" data-type="neutral">
-            <select class="answer-type" ${gameState.gameMode !== 'colors' ? 'style="display:none"' : ''}>
-                <option value="match">أخضر (+1)</option>
-                <option value="neutral" selected>أصفر (0)</option>
-                <option value="avoid">أحمر (-1)</option>
-            </select>
-            <button class="btn-remove-answer" style="display:none;">×</button>
-        </div>
-    `;
-});
-
+// ============================================
 // Leaderboard
+// ============================================
+
 function updateLeaderboard() {
     if (gameState.leaderboard.size === 0) {
         leaderboardList.innerHTML = '<div class="empty-state">لا توجد نتائج بعد</div>';
@@ -665,7 +588,7 @@ function updateLeaderboard() {
     leaderboardList.innerHTML = '';
     sorted.forEach(([username, score], index) => {
         const item = document.createElement('div');
-        item.className = `leaderboard-item rank-${index + 1}`;
+        item.className = `leaderboard-item${index === 0 ? ' rank-1' : ''}`;
         item.innerHTML = `
             <span class="leaderboard-rank">#${index + 1}</span>
             <span class="leaderboard-name">${username}</span>
@@ -686,20 +609,35 @@ resetLeaderboardBtn.addEventListener('click', () => {
     }
 });
 
-// Logo upload handler
+// ============================================
+// New Round
+// ============================================
+
+newRoundBtn.addEventListener('click', () => {
+    resultsCard.classList.add('hidden');
+    questionText.value = '';
+    document.querySelectorAll('.answer-input-float').forEach((input, index) => {
+        if (index === 0) {
+            input.value = '';
+        } else {
+            input.closest('.answer-input-group-float')?.remove();
+        }
+    });
+});
+
+// ============================================
+// Logo Handler
+// ============================================
+
 logoImage.addEventListener('error', () => {
-    // If logo fails to load, use a gradient circle as fallback
     logoImage.style.display = 'none';
     logoImage.parentElement.style.background = 'linear-gradient(135deg, #00A8E8, #023E8A)';
 });
 
+// ============================================
 // Initialize
+// ============================================
+
 updateAnswersUI();
 
-// Check for OAuth callback on page load
-if (window.location.hash.includes('access_token')) {
-    handleOAuthCallback();
-}
-
-// End of DOMContentLoaded
 });
