@@ -1,6 +1,6 @@
 // Twitch OAuth Configuration
 const TWITCH_CONFIG = {
-    clientId: localStorage.getItem('twitch_client_id') || '',
+    clientId: 'ilf1p5tr7eydtaw36dje0q1a78e1cf', // ← ضع Client ID الخاص بك هنا
     redirectUri: window.location.origin + window.location.pathname,
     scopes: ['chat:read', 'chat:edit']
 };
@@ -39,13 +39,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // DOM Elements
 const setupSection = document.getElementById('setupSection');
 const gameSection = document.getElementById('gameSection');
-const setupGuide = document.getElementById('setupGuide');
-const loginSection = document.getElementById('loginSection');
-const clientIdInput = document.getElementById('clientIdInput');
-const saveClientIdBtn = document.getElementById('saveClientIdBtn');
 const twitchLoginBtn = document.getElementById('twitchLoginBtn');
-const resetClientIdBtn = document.getElementById('resetClientIdBtn');
-const redirectUrl = document.getElementById('redirectUrl');
 
 const secretToggle = document.getElementById('secretToggle');
 const secretContent = document.getElementById('secretContent');
@@ -83,64 +77,13 @@ const logoImage = document.getElementById('logoImage');
 // OAuth Setup
 // ============================================
 
-if (redirectUrl) {
-    redirectUrl.textContent = TWITCH_CONFIG.redirectUri;
-}
-
-window.copyRedirectUrl = function() {
-    navigator.clipboard.writeText(TWITCH_CONFIG.redirectUri).then(() => {
-        alert('تم نسخ الرابط!');
-    });
-};
-
-if (TWITCH_CONFIG.clientId) {
-    setupGuide.classList.add('hidden');
-    loginSection.classList.remove('hidden');
-} else {
-    setupGuide.classList.remove('hidden');
-    loginSection.classList.add('hidden');
-}
-
-saveClientIdBtn.addEventListener('click', () => {
-    const clientId = clientIdInput.value.trim();
-    if (!clientId) {
-        alert('الرجاء إدخال Client ID');
-        return;
-    }
-    
-    localStorage.setItem('twitch_client_id', clientId);
-    TWITCH_CONFIG.clientId = clientId;
-    
-    setupGuide.classList.add('hidden');
-    loginSection.classList.remove('hidden');
-    
-    console.log('Client ID saved:', clientId.substring(0, 8) + '...');
-});
-
-resetClientIdBtn.addEventListener('click', () => {
-    if (confirm('هل تريد حذف Client ID المحفوظ؟')) {
-        localStorage.removeItem('twitch_client_id');
-        TWITCH_CONFIG.clientId = '';
-        setupGuide.classList.remove('hidden');
-        loginSection.classList.add('hidden');
-        clientIdInput.value = '';
-        console.log('Client ID removed');
-    }
-});
-
-console.log('Setup elements check:', {
-    setupGuide: !!setupGuide,
-    loginSection: !!loginSection,
-    twitchLoginBtn: !!twitchLoginBtn,
-    clientIdSaved: !!TWITCH_CONFIG.clientId
-});
-
+// OAuth Login Button
 twitchLoginBtn.addEventListener('click', () => {
     console.log('Twitch Login button clicked!');
     console.log('Client ID:', TWITCH_CONFIG.clientId);
     
-    if (!TWITCH_CONFIG.clientId || TWITCH_CONFIG.clientId === '') {
-        alert('⚠️ يجب حفظ Client ID أولاً!\n\nالرجاء:\n1. إنشاء Twitch Application\n2. نسخ Client ID\n3. حفظه في الخانة أعلاه');
+    if (!TWITCH_CONFIG.clientId || TWITCH_CONFIG.clientId === 'ضع_Client_ID_هنا') {
+        alert('⚠️ خطأ: Client ID غير مُعرّف!\n\nالرجاء:\n1. افتح ملف app.js\n2. في السطر 3 استبدل "ضع_Client_ID_هنا" بـ Client ID الخاص بك\n3. احفظ الملف وارفعه على GitHub');
         return;
     }
     
