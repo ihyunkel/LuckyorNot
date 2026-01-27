@@ -68,7 +68,7 @@ showManualBtn.addEventListener('click', () => {
 // Twitch OAuth Login
 twitchLoginBtn.addEventListener('click', () => {
     // Check if Client ID is configured
-    if (TWITCH_CONFIG.clientId === 'ilf1p5tr7eydtaw36dje0q1a78e1cf') {
+    if (TWITCH_CONFIG.clientId === 'YOUR_CLIENT_ID_HERE') {
         showClientIdSetupGuide();
         return;
     }
