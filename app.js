@@ -1,6 +1,6 @@
 // Twitch OAuth Configuration
 const TWITCH_CONFIG = {
-    clientId: 'ilf1p5tr7eydtaw36dje0q1a78e1cf', // سيتم توفير تعليمات للحصول عليه
+    clientId: localStorage.getItem('ilf1p5tr7eydtaw36dje0q1a78e1cf') || '',
     redirectUri: window.location.origin + window.location.pathname,
     scopes: ['chat:read', 'chat:edit']
 };
@@ -45,12 +45,13 @@ document.addEventListener('DOMContentLoaded', function() {
 // DOM Elements
 const setupSection = document.getElementById('setupSection');
 const gameSection = document.getElementById('gameSection');
+const setupGuide = document.getElementById('setupGuide');
+const loginSection = document.getElementById('loginSection');
+const clientIdInput = document.getElementById('clientIdInput');
+const saveClientIdBtn = document.getElementById('saveClientIdBtn');
 const twitchLoginBtn = document.getElementById('twitchLoginBtn');
-const showManualBtn = document.getElementById('showManualBtn');
-const manualForm = document.getElementById('manualForm');
-const channelNameInput = document.getElementById('channelName');
-const botTokenInput = document.getElementById('botToken');
-const connectBtn = document.getElementById('connectBtn');
+const resetClientIdBtn = document.getElementById('resetClientIdBtn');
+const redirectUrl = document.getElementById('redirectUrl');
 
 // Floating Secret Box Elements
 const secretToggle = document.getElementById('secretToggle');
@@ -82,51 +83,60 @@ addAnswerFloatBtn.addEventListener('click', () => {
     `;
     answersListFloat.appendChild(answerGroup);
 });
-const disconnectBtn = document.getElementById('disconnectBtn');
-const connectedChannel = document.getElementById('connectedChannel');
-const statusIndicator = document.getElementById('statusIndicator');
-
-const questionText = document.getElementById('questionText');
-const gameDuration = document.getElementById('gameDuration');
-const answersList = document.getElementById('answersList');
-const addAnswerBtn = document.getElementById('addAnswerBtn');
-const startGameBtn = document.getElementById('startGameBtn');
-
-const activeGameCard = document.getElementById('activeGameCard');
-const activeQuestion = document.getElementById('activeQuestion');
-const timerText = document.getElementById('timerText');
-const timerCircle = document.getElementById('timerCircle');
-const participantCount = document.getElementById('participantCount');
-const participantsList = document.getElementById('participantsList');
-const endGameBtn = document.getElementById('endGameBtn');
-
-const resultsCard = document.getElementById('resultsCard');
-const correctAnswers = document.getElementById('correctAnswers');
-const resultsList = document.getElementById('resultsList');
-const newRoundBtn = document.getElementById('newRoundBtn');
-
-const leaderboardList = document.getElementById('leaderboardList');
-const resetLeaderboardBtn = document.getElementById('resetLeaderboardBtn');
-
-const logoImage = document.getElementById('logoImage');
 
 // ============================================
-// Twitch OAuth Functions
+// OAuth Setup
 // ============================================
 
-// Show/Hide Manual Form
-showManualBtn.addEventListener('click', () => {
-    manualForm.classList.toggle('hidden');
+// Display redirect URL
+if (redirectUrl) {
+    redirectUrl.textContent = TWITCH_CONFIG.redirectUri;
+}
+
+// Copy redirect URL function
+window.copyRedirectUrl = function() {
+    navigator.clipboard.writeText(TWITCH_CONFIG.redirectUri).then(() => {
+        alert('تم نسخ الرابط!');
+    });
+};
+
+// Check if Client ID is saved
+if (TWITCH_CONFIG.clientId) {
+    setupGuide.classList.add('hidden');
+    loginSection.classList.remove('hidden');
+} else {
+    setupGuide.classList.remove('hidden');
+    loginSection.classList.add('hidden');
+}
+
+// Save Client ID
+saveClientIdBtn.addEventListener('click', () => {
+    const clientId = clientIdInput.value.trim();
+    if (!clientId) {
+        alert('الرجاء إدخال Client ID');
+        return;
+    }
+    
+    localStorage.setItem('twitch_client_id', clientId);
+    TWITCH_CONFIG.clientId = clientId;
+    
+    setupGuide.classList.add('hidden');
+    loginSection.classList.remove('hidden');
+});
+
+// Reset Client ID
+resetClientIdBtn.addEventListener('click', () => {
+    if (confirm('هل تريد حذف Client ID المحفوظ؟')) {
+        localStorage.removeItem('twitch_client_id');
+        TWITCH_CONFIG.clientId = '';
+        setupGuide.classList.remove('hidden');
+        loginSection.classList.add('hidden');
+        clientIdInput.value = '';
+    }
 });
 
 // Twitch OAuth Login
 twitchLoginBtn.addEventListener('click', () => {
-    // Check if Client ID is configured
-    if (TWITCH_CONFIG.clientId === 'YOUR_CLIENT_ID_HERE') {
-        showClientIdSetupGuide();
-        return;
-    }
-    
     const authUrl = `https://id.twitch.tv/oauth2/authorize?` +
         `client_id=${TWITCH_CONFIG.clientId}&` +
         `redirect_uri=${encodeURIComponent(TWITCH_CONFIG.redirectUri)}&` +
@@ -159,7 +169,7 @@ function handleOAuthCallback() {
         })
         .catch(error => {
             console.error('Error getting user info:', error);
-            alert('حدث خطأ في تسجيل الدخول. يرجى المحاولة مرة أخرى.');
+            alert('حدث خطأ في تسجيل الدخول. تحقق من Client ID أو جرب مرة أخرى.');
         });
         
         // Clean URL
@@ -170,9 +180,6 @@ function handleOAuthCallback() {
 // Connect using OAuth
 async function connectWithOAuth(username, token) {
     try {
-        twitchLoginBtn.disabled = true;
-        twitchLoginBtn.innerHTML = '<span style="margin-left: 10px;">⏳</span> جاري الاتصال...';
-        
         const client = new tmi.Client({
             options: { debug: false },
             identity: {
@@ -204,73 +211,43 @@ async function connectWithOAuth(username, token) {
     } catch (error) {
         console.error('Connection error:', error);
         alert('فشل الاتصال. يرجى المحاولة مرة أخرى.');
-        twitchLoginBtn.disabled = false;
-        twitchLoginBtn.innerHTML = `
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="margin-left: 10px;">
-                <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z"/>
-            </svg>
-            تسجيل الدخول عبر Twitch
-        `;
     }
 }
 
-// Show setup guide if Client ID not configured
-function showClientIdSetupGuide() {
-    const modal = document.createElement('div');
-    modal.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0,0,0,0.8);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-        padding: 20px;
-    `;
-    
-    modal.innerHTML = `
-        <div style="background: white; padding: 40px; border-radius: 20px; max-width: 600px; text-align: right; direction: rtl;">
-            <h2 style="color: #00A8E8; margin-bottom: 20px;">⚙️ إعداد التطبيق لأول مرة</h2>
-            <p style="line-height: 1.8; color: #333; margin-bottom: 20px;">
-                لاستخدام تسجيل الدخول السريع، تحتاج إلى إنشاء تطبيق Twitch مجاني. اتبع الخطوات التالية:
-            </p>
-            <ol style="text-align: right; line-height: 2; color: #555;">
-                <li>اذهب إلى <a href="https://dev.twitch.tv/console/apps" target="_blank" style="color: #9146FF;">dev.twitch.tv/console/apps</a></li>
-                <li>اضغط "Register Your Application"</li>
-                <li>املأ البيانات:
-                    <ul style="margin-top: 10px;">
-                        <li>Name: أنت وحظك</li>
-                        <li>OAuth Redirect URLs: <code style="background: #f0f0f0; padding: 2px 8px; border-radius: 4px;">${window.location.origin + window.location.pathname}</code></li>
-                        <li>Category: Chat Bot</li>
-                    </ul>
-                </li>
-                <li>احصل على Client ID وضعه في ملف <code>app.js</code></li>
-            </ol>
-            <p style="background: #E3F4FF; padding: 15px; border-radius: 10px; margin-top: 20px; color: #0077B6;">
-                💡 <strong>بديل سريع:</strong> يمكنك استخدام "الطريقة اليدوية" أدناه بدون إعداد!
-            </p>
-            <button onclick="this.parentElement.parentElement.remove()" 
-                    style="background: #00A8E8; color: white; border: none; padding: 12px 30px; 
-                           border-radius: 10px; font-size: 16px; cursor: pointer; margin-top: 20px; font-weight: 700;">
-                فهمت
-            </button>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
+// Check for OAuth callback on page load
+if (window.location.hash.includes('access_token')) {
+    handleOAuthCallback();
 }
 
-// Mode Selection
-document.querySelectorAll('.mode-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        gameState.gameMode = btn.dataset.mode;
-        updateAnswersUI();
-    });
+// ============================================
+const disconnectBtn = document.getElementById('disconnectBtn');
+const connectedChannel = document.getElementById('connectedChannel');
+const statusIndicator = document.getElementById('statusIndicator');
+
+const questionText = document.getElementById('questionText');
+const gameDuration = document.getElementById('gameDuration');
+const answersList = document.getElementById('answersList');
+const addAnswerBtn = document.getElementById('addAnswerBtn');
+const startGameBtn = document.getElementById('startGameBtn');
+
+const activeGameCard = document.getElementById('activeGameCard');
+const activeQuestion = document.getElementById('activeQuestion');
+const timerText = document.getElementById('timerText');
+const timerCircle = document.getElementById('timerCircle');
+const participantCount = document.getElementById('participantCount');
+const participantsList = document.getElementById('participantsList');
+const endGameBtn = document.getElementById('endGameBtn');
+
+const resultsCard = document.getElementById('resultsCard');
+const correctAnswers = document.getElementById('correctAnswers');
+const resultsList = document.getElementById('resultsList');
+const newRoundBtn = document.getElementById('newRoundBtn');
+
+const leaderboardList = document.getElementById('leaderboardList');
+const resetLeaderboardBtn = document.getElementById('resetLeaderboardBtn');
+
+const logoImage = document.getElementById('logoImage');
+
 });
 
 function updateAnswersUI() {
@@ -339,55 +316,6 @@ document.querySelectorAll('.btn-remove-answer').forEach(btn => {
 });
 
 // Connect to Twitch
-connectBtn.addEventListener('click', async () => {
-    const channel = channelNameInput.value.trim().toLowerCase();
-    const token = botTokenInput.value.trim();
-    
-    if (!channel || !token) {
-        alert('الرجاء إدخال اسم القناة والتوكن');
-        return;
-    }
-    
-    try {
-        connectBtn.disabled = true;
-        connectBtn.textContent = 'جاري الاتصال...';
-        
-        const client = new tmi.Client({
-            options: { debug: false },
-            identity: {
-                username: 'your_bot_username',
-                password: token
-            },
-            channels: [channel]
-        });
-        
-        client.on('message', handleMessage);
-        client.on('connected', () => {
-            gameState.isConnected = true;
-            gameState.channel = channel;
-            gameState.client = client;
-            
-            setupSection.classList.add('hidden');
-            gameSection.classList.remove('hidden');
-            connectedChannel.textContent = channel;
-            
-            client.say(channel, '🎮 بوت "أنت وحظك" متصل الآن! استعدوا للعب!');
-        });
-        
-        client.on('disconnected', () => {
-            gameState.isConnected = false;
-            handleDisconnect();
-        });
-        
-        await client.connect();
-    } catch (error) {
-        console.error('Connection error:', error);
-        alert('فشل الاتصال. تحقق من التوكن واسم القناة.');
-        connectBtn.disabled = false;
-        connectBtn.textContent = 'اتصال بالقناة';
-    }
-});
-
 // Disconnect
 disconnectBtn.addEventListener('click', () => {
     if (gameState.client) {
