@@ -1,6 +1,6 @@
 // Twitch OAuth Configuration
 const TWITCH_CONFIG = {
-    clientId: 'ilf1p5tr7eydtaw36dje0q1a78e1cf', // ← ضع Client ID الخاص بك هنا
+    clientId: 'h42n8kuvty7h0v2fpnh1td9ke1zguj', // ← ضع Client ID الخاص بك هنا
     redirectUri: window.location.origin + window.location.pathname,
     scopes: ['chat:read', 'chat:edit']
 };
