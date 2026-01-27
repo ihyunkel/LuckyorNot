@@ -122,6 +122,8 @@ saveClientIdBtn.addEventListener('click', () => {
     
     setupGuide.classList.add('hidden');
     loginSection.classList.remove('hidden');
+    
+    console.log('Client ID saved:', clientId.substring(0, 8) + '...');
 });
 
 // Reset Client ID
@@ -132,17 +134,35 @@ resetClientIdBtn.addEventListener('click', () => {
         setupGuide.classList.remove('hidden');
         loginSection.classList.add('hidden');
         clientIdInput.value = '';
+        console.log('Client ID removed');
     }
+});
+
+// Check if elements exist
+console.log('Setup elements check:', {
+    setupGuide: !!setupGuide,
+    loginSection: !!loginSection,
+    twitchLoginBtn: !!twitchLoginBtn,
+    clientIdSaved: !!TWITCH_CONFIG.clientId
 });
 
 // Twitch OAuth Login
 twitchLoginBtn.addEventListener('click', () => {
+    console.log('Twitch Login button clicked!');
+    console.log('Client ID:', TWITCH_CONFIG.clientId);
+    
+    if (!TWITCH_CONFIG.clientId || TWITCH_CONFIG.clientId === '') {
+        alert('⚠️ يجب حفظ Client ID أولاً!\n\nالرجاء:\n1. إنشاء Twitch Application\n2. نسخ Client ID\n3. حفظه في الخانة أعلاه');
+        return;
+    }
+    
     const authUrl = `https://id.twitch.tv/oauth2/authorize?` +
         `client_id=${TWITCH_CONFIG.clientId}&` +
         `redirect_uri=${encodeURIComponent(TWITCH_CONFIG.redirectUri)}&` +
         `response_type=token&` +
         `scope=${TWITCH_CONFIG.scopes.join('+')}`;
     
+    console.log('Redirecting to:', authUrl);
     window.location.href = authUrl;
 });
 
