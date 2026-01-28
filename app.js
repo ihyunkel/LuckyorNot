@@ -11,12 +11,60 @@ function normalizeArabic(text) {
     return text
         .toLowerCase()
         .trim()
+        // Remove ال
+        .replace(/^ال/, '')
         .replace(/[أإآا]/g, 'ا')
         .replace(/[ةه]/g, 'ه')
         .replace(/[يى]/g, 'ي')
         .replace(/ـ/g, '')
         .replace(/[\u064B-\u065F]/g, '')
         .replace(/\s+/g, ' ');
+}
+
+// Levenshtein distance for fuzzy matching
+function levenshteinDistance(str1, str2) {
+    const matrix = [];
+    
+    for (let i = 0; i <= str2.length; i++) {
+        matrix[i] = [i];
+    }
+    
+    for (let j = 0; j <= str1.length; j++) {
+        matrix[0][j] = j;
+    }
+    
+    for (let i = 1; i <= str2.length; i++) {
+        for (let j = 1; j <= str1.length; j++) {
+            if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+                matrix[i][j] = matrix[i - 1][j - 1];
+            } else {
+                matrix[i][j] = Math.min(
+                    matrix[i - 1][j - 1] + 1,
+                    matrix[i][j - 1] + 1,
+                    matrix[i - 1][j] + 1
+                );
+            }
+        }
+    }
+    
+    return matrix[str2.length][str1.length];
+}
+
+// Check if two texts are similar (handles typos)
+function isSimilarText(text1, text2) {
+    const normalized1 = normalizeArabic(text1);
+    const normalized2 = normalizeArabic(text2);
+    
+    if (normalized1 === normalized2) {
+        return true;
+    }
+    
+    // Allow 85% similarity for typos
+    const distance = levenshteinDistance(normalized1, normalized2);
+    const maxLength = Math.max(normalized1.length, normalized2.length);
+    const similarity = 1 - (distance / maxLength);
+    
+    return similarity >= 0.85;
 }
 
 // Game State
@@ -43,47 +91,42 @@ const twitchLoginBtn = document.getElementById('twitchLoginBtn');
 
 const secretToggle = document.getElementById('secretToggle');
 const secretContent = document.getElementById('secretContent');
-const secretAnswersFloat = document.querySelector('.secret-answers-float');
+const secretAnswersFloat = document.getElementById('secretAnswersFloat');
 const answersListFloat = document.getElementById('answersListFloat');
 const addAnswerFloatBtn = document.getElementById('addAnswerFloatBtn');
 
 const disconnectBtn = document.getElementById('disconnectBtn');
 const connectedChannel = document.getElementById('connectedChannel');
-const statusIndicator = document.getElementById('statusIndicator');
 
-const questionText = document.getElementById('questionText');
-const gameDuration = document.getElementById('gameDuration');
-const startGameBtn = document.getElementById('startGameBtn');
+// NEW: Question Input Screen
+const questionInputScreen = document.getElementById('questionInputScreen');
+const openQuestionScreen = document.getElementById('openQuestionScreen');
+const questionTextInput = document.getElementById('questionTextInput');
+const gameDurationInput = document.getElementById('gameDurationInput');
+const startGameBtnFinal = document.getElementById('startGameBtnFinal');
+
+// Leaderboard Toggle
+const leaderboardToggleBtn = document.getElementById('leaderboardToggleBtn');
+const leaderboardCard = document.getElementById('leaderboardCard');
+const leaderboardList = document.getElementById('leaderboardList');
 
 const activeGameCard = document.getElementById('activeGameCard');
 const activeQuestion = document.getElementById('activeQuestion');
 const timerText = document.getElementById('timerText');
 const timerCircle = document.getElementById('timerCircle');
-const participantCount = document.getElementById('participantCount');
 const participantsList = document.getElementById('participantsList');
+const participantsCount = document.getElementById('participantsCount');
 const endGameBtn = document.getElementById('endGameBtn');
 
-const resultsCard = document.getElementById('resultsCard');
-const correctAnswers = document.getElementById('correctAnswers');
-const resultsList = document.getElementById('resultsList');
-const newRoundBtn = document.getElementById('newRoundBtn');
+// NEW: Results Display
+const resultsDisplay = document.getElementById('resultsDisplay');
+const resultsGrid = document.getElementById('resultsGrid');
+const nextRoundBtn = document.getElementById('nextRoundBtn');
 
-const leaderboardList = document.getElementById('leaderboardList');
-const resetLeaderboardBtn = document.getElementById('resetLeaderboardBtn');
-
-const logoImage = document.getElementById('logoImage');
-
-// ============================================
-// OAuth Setup
-// ============================================
-
-// OAuth Login Button
+// Twitch Login
 twitchLoginBtn.addEventListener('click', () => {
-    console.log('Twitch Login button clicked!');
-    console.log('Client ID:', TWITCH_CONFIG.clientId);
-    
     if (!TWITCH_CONFIG.clientId || TWITCH_CONFIG.clientId === 'ضع_Client_ID_هنا') {
-        alert('⚠️ خطأ: Client ID غير مُعرّف!\n\nالرجاء:\n1. افتح ملف app.js\n2. في السطر 3 استبدل "ضع_Client_ID_هنا" بـ Client ID الخاص بك\n3. احفظ الملف وارفعه على GitHub');
+        alert('⚠️ خطأ: Client ID غير مُعرّف!\n\nالرجاء:\n1. افتح ملف app.js\n2. في السطر 3 استبدل "ضع_Client_ID_هنا" بـ Client ID الخاص بك');
         return;
     }
     
@@ -93,42 +136,38 @@ twitchLoginBtn.addEventListener('click', () => {
         `response_type=token&` +
         `scope=${TWITCH_CONFIG.scopes.join('+')}`;
     
-    console.log('Redirecting to:', authUrl);
     window.location.href = authUrl;
 });
 
-function handleOAuthCallback() {
-    const hash = window.location.hash.substring(1);
-    const params = new URLSearchParams(hash);
+// Handle OAuth Callback
+const hash = window.location.hash;
+if (hash && hash.includes('access_token')) {
+    const params = new URLSearchParams(hash.substring(1));
     const accessToken = params.get('access_token');
     
     if (accessToken) {
-        fetch('https://api.twitch.tv/helix/users', {
-            headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'Client-Id': TWITCH_CONFIG.clientId
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.data && data.data[0]) {
-                const username = data.data[0].login;
-                connectWithOAuth(username, accessToken);
-            }
-        })
-        .catch(error => {
-            console.error('Error getting user info:', error);
-            alert('حدث خطأ في تسجيل الدخول. تحقق من Client ID أو جرب مرة أخرى.');
-        });
-        
+        connectToTwitch(accessToken);
         window.history.replaceState({}, document.title, window.location.pathname);
     }
 }
 
-async function connectWithOAuth(username, token) {
-    try {
+function connectToTwitch(token) {
+    fetch('https://api.twitch.tv/helix/users', {
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Client-Id': TWITCH_CONFIG.clientId
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const username = data.data[0].login;
+        
         const client = new tmi.Client({
             options: { debug: false },
+            connection: {
+                secure: true,
+                reconnect: true
+            },
             identity: {
                 username: username,
                 password: `oauth:${token}`
@@ -136,207 +175,177 @@ async function connectWithOAuth(username, token) {
             channels: [username]
         });
         
-        client.on('message', handleMessage);
-        client.on('connected', () => {
+        client.connect().then(() => {
             gameState.isConnected = true;
-            gameState.channel = username;
             gameState.client = client;
+            gameState.channel = username;
             
             setupSection.classList.add('hidden');
             gameSection.classList.remove('hidden');
             connectedChannel.textContent = username;
-            
-            client.say(username, '🎮 بوت "أنت وحظك" متصل الآن! استعدوا للعب!');
         });
         
-        client.on('disconnected', () => {
-            gameState.isConnected = false;
-            handleDisconnect();
-        });
-        
-        await client.connect();
-    } catch (error) {
-        console.error('Connection error:', error);
-        alert('فشل الاتصال. يرجى المحاولة مرة أخرى.');
-    }
+        client.on('message', handleMessage);
+    });
 }
 
-if (window.location.hash.includes('access_token')) {
-    handleOAuthCallback();
-}
-
-// ============================================
-// Floating Secret Box
-// ============================================
-
+// Toggle Secret Answers Float
 secretToggle.addEventListener('click', () => {
     secretAnswersFloat.classList.toggle('collapsed');
     secretToggle.textContent = secretAnswersFloat.classList.contains('collapsed') ? '+' : '−';
 });
 
-addAnswerFloatBtn.addEventListener('click', () => {
-    const index = answersListFloat.children.length;
-    const answerGroup = document.createElement('div');
-    answerGroup.className = 'answer-input-group-float';
-    answerGroup.innerHTML = `
-        <input type="text" class="answer-input-float" placeholder="إجابة" data-index="${index}">
-        <select class="answer-type-float">
-            <option value="super">💛 (+2)</option>
-            <option value="match">🟢 (+1)</option>
-            <option value="neutral" selected>🟡 (0)</option>
-            <option value="avoid">🔴 (-1)</option>
-            <option value="bad">⚫ (-2)</option>
-        </select>
-    `;
-    answersListFloat.appendChild(answerGroup);
+// Open Question Screen
+openQuestionScreen.addEventListener('click', () => {
+    questionInputScreen.classList.remove('hidden');
+    leaderboardCard.classList.add('hidden');
 });
 
-// ============================================
-// Game Mode Selection
-// ============================================
-
-document.querySelectorAll('.mode-btn').forEach(btn => {
+// Mode Selection in Question Screen
+document.querySelectorAll('.mode-btn-large').forEach(btn => {
     btn.addEventListener('click', () => {
-        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.mode-btn-large').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         gameState.gameMode = btn.dataset.mode;
-        updateAnswersUI();
     });
 });
 
-function updateAnswersUI() {
-    const typeSelectors = document.querySelectorAll('.answer-type-float');
-    const answerGroups = document.querySelectorAll('.answer-input-group-float');
+// Add Answer (Float)
+addAnswerFloatBtn.addEventListener('click', () => {
+    const answerText = prompt('أدخل الإجابة:');
+    if (!answerText) return;
+    
+    let answerType = 'match';
     
     if (gameState.gameMode === 'colors') {
-        typeSelectors.forEach(sel => {
-            sel.style.display = 'block';
-        });
-    } else if (gameState.gameMode === 'match') {
-        typeSelectors.forEach((sel, index) => {
-            if (index === 0) {
-                sel.style.display = 'none';
-                sel.value = 'match';
-            } else {
-                answerGroups[index]?.remove();
-            }
-        });
-    } else if (gameState.gameMode === 'avoid') {
-        typeSelectors.forEach((sel, index) => {
-            if (index === 0) {
-                sel.style.display = 'none';
-                sel.value = 'avoid';
-            } else {
-                answerGroups[index]?.remove();
-            }
-        });
+        const typeChoice = prompt('نوع الإجابة:\n1 = أخضر (+1)\n2 = أصفر (0)\n3 = أحمر (-1)\n4 = ذهبي (+2)\n5 = أسود (-2)');
+        
+        if (typeChoice === '1') answerType = 'match';
+        else if (typeChoice === '2') answerType = 'neutral';
+        else if (typeChoice === '3') answerType = 'avoid';
+        else if (typeChoice === '4') answerType = 'super';
+        else if (typeChoice === '5') answerType = 'bad';
     }
-}
-
-// ============================================
-// Disconnect
-// ============================================
-
-disconnectBtn.addEventListener('click', () => {
-    if (gameState.client) {
-        gameState.client.disconnect();
-    }
-    handleDisconnect();
+    
+    gameState.answers.push({ text: answerText, type: answerType });
+    updateAnswersListFloat();
 });
 
-function handleDisconnect() {
-    gameState.isConnected = false;
-    gameState.client = null;
-    gameState.channel = '';
+function updateAnswersListFloat() {
+    if (gameState.answers.length === 0) {
+        answersListFloat.innerHTML = '<div class="empty-state-float">لم تضف إجابات بعد</div>';
+        return;
+    }
     
-    setupSection.classList.remove('hidden');
-    gameSection.classList.add('hidden');
-    activeGameCard.classList.add('hidden');
-    resultsCard.classList.add('hidden');
+    answersListFloat.innerHTML = '';
+    gameState.answers.forEach((answer, index) => {
+        const answerEl = document.createElement('div');
+        answerEl.className = 'answer-item-float';
+        
+        let typeLabel = '';
+        let typeClass = '';
+        
+        if (answer.type === 'match') {
+            typeLabel = '🟢';
+            typeClass = 'answer-correct';
+        } else if (answer.type === 'avoid') {
+            typeLabel = '🔴';
+            typeClass = 'answer-avoid';
+        } else if (answer.type === 'neutral') {
+            typeLabel = '🟡';
+            typeClass = 'answer-neutral';
+        } else if (answer.type === 'super') {
+            typeLabel = '💛';
+            typeClass = 'answer-super';
+        } else if (answer.type === 'bad') {
+            typeLabel = '⚫';
+            typeClass = 'answer-bad';
+        }
+        
+        answerEl.classList.add(typeClass);
+        answerEl.innerHTML = `
+            <span class="answer-type-badge">${typeLabel}</span>
+            <span class="answer-text-float">${answer.text}</span>
+            <button class="btn-remove-float" onclick="removeAnswer(${index})">×</button>
+        `;
+        
+        answersListFloat.appendChild(answerEl);
+    });
 }
 
-// ============================================
-// Start Game
-// ============================================
+window.removeAnswer = function(index) {
+    gameState.answers.splice(index, 1);
+    updateAnswersListFloat();
+};
 
-startGameBtn.addEventListener('click', () => {
-    const question = questionText.value.trim();
+// Start Game (Final)
+startGameBtnFinal.addEventListener('click', () => {
+    const question = questionTextInput.value.trim();
     
     if (!question) {
         alert('الرجاء إدخال السؤال');
         return;
     }
     
-    const answerInputs = document.querySelectorAll('.answer-input-float');
-    const answers = [];
-    
-    answerInputs.forEach((input, index) => {
-        const answer = input.value.trim();
-        if (answer) {
-            const typeSelect = input.closest('.answer-input-group-float').querySelector('.answer-type-float');
-            const type = typeSelect ? typeSelect.value : gameState.gameMode;
-            answers.push({
-                text: normalizeArabic(answer),
-                type: type
-            });
-        }
-    });
-    
-    if (answers.length === 0) {
-        alert('الرجاء إدخال إجابة واحدة على الأقل في الصندوق العائم');
+    if (gameState.answers.length === 0) {
+        alert('الرجاء إضافة إجابة واحدة على الأقل');
         return;
     }
     
-    gameState.answers = answers;
-    gameState.participants.clear();
-    gameState.timeRemaining = parseInt(gameDuration.value);
+    const duration = parseInt(gameDurationInput.value);
     
-    gameState.currentGame = {
-        question: question,
-        answers: answers,
-        startTime: Date.now()
-    };
-    
-    activeQuestion.textContent = question;
-    activeGameCard.classList.remove('hidden');
-    document.querySelector('.question-setup-card').style.display = 'none';
-    resultsCard.classList.add('hidden');
-    
-    gameState.client.say(gameState.channel, `🎮 ${question} - ${gameState.timeRemaining} ثانية ⏰`);
-    
-    startTimer();
+    startGame(question, duration);
 });
 
-function startTimer() {
-    const totalTime = gameState.timeRemaining;
-    const circumference = 2 * Math.PI * 35;
+function startGame(question, duration) {
+    gameState.currentGame = question;
+    gameState.timeRemaining = duration;
+    gameState.participants.clear();
     
+    questionInputScreen.classList.add('hidden');
+    activeGameCard.classList.remove('hidden');
+    resultsDisplay.classList.add('hidden');
+    
+    activeQuestion.textContent = question;
+    timerText.textContent = duration;
+    
+    updateParticipantsList();
+    startTimer(duration);
+    
+    gameState.client.say(gameState.channel, `🎮 سؤال جديد: ${question}`);
+    gameState.client.say(gameState.channel, `⏰ الوقت: ${duration} ثانية`);
+    gameState.client.say(gameState.channel, `📝 اكتب إجابتك بـ ! (مثال: !السعودية)`);
+}
+
+function startTimer(duration) {
+    const circumference = 2 * Math.PI * 35;
     timerCircle.style.strokeDasharray = circumference;
+    timerCircle.style.strokeDashoffset = 0;
+    
+    let timeLeft = duration;
     
     gameState.timer = setInterval(() => {
-        gameState.timeRemaining--;
-        timerText.textContent = gameState.timeRemaining;
+        timeLeft--;
+        gameState.timeRemaining = timeLeft;
+        timerText.textContent = timeLeft;
         
-        const progress = gameState.timeRemaining / totalTime;
+        const progress = timeLeft / duration;
         const offset = circumference * (1 - progress);
         timerCircle.style.strokeDashoffset = offset;
         
-        if (gameState.timeRemaining <= 0) {
+        if (timeLeft <= 0) {
             endCurrentGame();
         }
     }, 1000);
 }
 
-// ============================================
-// Handle Messages
-// ============================================
-
 function handleMessage(channel, tags, message, self) {
     if (self) return;
     
     const username = tags['display-name'] || tags.username;
-    const messageText = message.trim();
+    let messageText = message.trim();
     
+    // Check for !توب or !top
     if (messageText === '!توب' || messageText === '!top') {
         sendLeaderboardToChat();
         return;
@@ -344,13 +353,200 @@ function handleMessage(channel, tags, message, self) {
     
     if (!gameState.currentGame) return;
     
+    // Only accept messages starting with !
+    if (!messageText.startsWith('!')) {
+        return;
+    }
+    
+    // Remove ! and trim
+    messageText = messageText.substring(1).trim();
+    
     if (gameState.participants.has(username)) {
         return;
     }
     
-    const normalizedAnswer = normalizeArabic(messageText);
-    gameState.participants.set(username, normalizedAnswer);
+    gameState.participants.set(username, messageText);
     updateParticipantsList();
+}
+
+function updateParticipantsList() {
+    const count = gameState.participants.size;
+    participantsCount.textContent = count;
+    
+    if (count === 0) {
+        participantsList.innerHTML = '<div class="empty-state">لا يوجد مشاركون بعد</div>';
+        return;
+    }
+    
+    participantsList.innerHTML = '';
+    gameState.participants.forEach((answer, username) => {
+        const participantEl = document.createElement('div');
+        participantEl.className = 'participant-item';
+        participantEl.innerHTML = `
+            <span class="participant-name">${username}</span>
+            <span class="participant-answer">${answer}</span>
+        `;
+        participantsList.appendChild(participantEl);
+    });
+}
+
+// End Game Button
+endGameBtn.addEventListener('click', () => {
+    endCurrentGame();
+});
+
+function endCurrentGame() {
+    if (!gameState.currentGame) return;
+    
+    clearInterval(gameState.timer);
+    
+    const results = [];
+    const answerGroups = {}; // Group participants by their answers
+    
+    gameState.participants.forEach((answer, username) => {
+        const result = evaluateAnswer(answer);
+        results.push({
+            username: username,
+            answer: answer,
+            points: result.points,
+            type: result.type,
+            matchedAnswer: result.matchedAnswer
+        });
+        
+        // Update leaderboard
+        const currentScore = gameState.leaderboard.get(username) || 0;
+        gameState.leaderboard.set(username, currentScore + result.points);
+        
+        // Group by matched answer
+        const key = result.matchedAnswer || 'other';
+        if (!answerGroups[key]) {
+            answerGroups[key] = {
+                answer: result.matchedAnswer || 'إجابات أخرى',
+                points: result.points,
+                type: result.type,
+                participants: []
+            };
+        }
+        answerGroups[key].participants.push(username);
+    });
+    
+    displayResults(answerGroups);
+    
+    gameState.client.say(gameState.channel, `⏱️ انتهى الوقت!`);
+    
+    gameState.currentGame = null;
+    activeGameCard.classList.add('hidden');
+    updateLeaderboard();
+}
+
+function evaluateAnswer(userAnswer) {
+    for (const answer of gameState.answers) {
+        // Use fuzzy matching instead of exact match
+        if (isSimilarText(userAnswer, answer.text)) {
+            let points = 0;
+            let type = 'neutral';
+            
+            if (answer.type === 'super') {
+                points = 2;
+                type = 'super';
+            } else if (gameState.gameMode === 'match' || answer.type === 'match') {
+                points = 1;
+                type = 'correct';
+            } else if (answer.type === 'neutral') {
+                points = 0;
+                type = 'neutral';
+            } else if (gameState.gameMode === 'avoid' || answer.type === 'avoid') {
+                points = -1;
+                type = 'incorrect';
+            } else if (answer.type === 'bad') {
+                points = -2;
+                type = 'bad';
+            }
+            
+            return { points, type, matchedAnswer: answer.text };
+        }
+    }
+    
+    // No match found
+    if (gameState.gameMode === 'match') {
+        return { points: 0, type: 'neutral', matchedAnswer: null };
+    } else if (gameState.gameMode === 'avoid') {
+        return { points: 1, type: 'correct', matchedAnswer: null };
+    } else {
+        return { points: 0, type: 'neutral', matchedAnswer: null };
+    }
+}
+
+function displayResults(answerGroups) {
+    resultsDisplay.classList.remove('hidden');
+    resultsGrid.innerHTML = '';
+    
+    Object.values(answerGroups).forEach(group => {
+        const boxEl = document.createElement('div');
+        boxEl.className = `result-box ${group.type}`;
+        
+        let pointsText = '';
+        if (group.points > 0) {
+            pointsText = `+${group.points}`;
+        } else if (group.points < 0) {
+            pointsText = `${group.points}`;
+        } else {
+            pointsText = '0';
+        }
+        
+        boxEl.innerHTML = `
+            <div class="result-answer-word">${group.answer}</div>
+            <div class="result-points">${pointsText} نقطة</div>
+            <div class="result-participants-list">
+                ${group.participants.map(p => `<div class="result-participant">${p}</div>`).join('')}
+            </div>
+        `;
+        
+        resultsGrid.appendChild(boxEl);
+    });
+}
+
+// Next Round Button
+nextRoundBtn.addEventListener('click', () => {
+    resultsDisplay.classList.add('hidden');
+    questionInputScreen.classList.remove('hidden');
+    questionTextInput.value = '';
+    gameState.answers = [];
+    updateAnswersListFloat();
+});
+
+// Leaderboard Toggle
+leaderboardToggleBtn.addEventListener('click', () => {
+    leaderboardCard.classList.toggle('hidden');
+});
+
+function updateLeaderboard() {
+    if (gameState.leaderboard.size === 0) {
+        leaderboardList.innerHTML = '<div class="empty-state">لا توجد نقاط بعد</div>';
+        return;
+    }
+    
+    const sorted = Array.from(gameState.leaderboard.entries())
+        .sort((a, b) => b[1] - a[1]);
+    
+    leaderboardList.innerHTML = '';
+    sorted.forEach(([player, score], index) => {
+        const itemEl = document.createElement('div');
+        itemEl.className = 'leaderboard-item';
+        
+        let rank = index + 1;
+        if (index === 0) rank = '🥇';
+        else if (index === 1) rank = '🥈';
+        else if (index === 2) rank = '🥉';
+        
+        itemEl.innerHTML = `
+            <span class="leaderboard-rank">${rank}</span>
+            <span class="leaderboard-name">${player}</span>
+            <span class="leaderboard-score">${score}</span>
+        `;
+        
+        leaderboardList.appendChild(itemEl);
+    });
 }
 
 function sendLeaderboardToChat() {
@@ -378,186 +574,14 @@ function sendLeaderboardToChat() {
     });
 }
 
-function updateParticipantsList() {
-    participantCount.textContent = gameState.participants.size;
-    
-    participantsList.innerHTML = '';
-    gameState.participants.forEach((answer, username) => {
-        const badge = document.createElement('span');
-        badge.className = 'participant-badge';
-        badge.textContent = username;
-        participantsList.appendChild(badge);
-    });
-}
-
-// ============================================
-// End Game
-// ============================================
-
-endGameBtn.addEventListener('click', () => {
-    endCurrentGame();
-});
-
-function endCurrentGame() {
-    if (!gameState.currentGame) return;
-    
-    clearInterval(gameState.timer);
-    
-    const results = [];
-    gameState.participants.forEach((answer, username) => {
-        const result = evaluateAnswer(answer);
-        results.push({
-            username: username,
-            answer: answer,
-            points: result.points,
-            type: result.type
-        });
-        
-        const currentScore = gameState.leaderboard.get(username) || 0;
-        gameState.leaderboard.set(username, currentScore + result.points);
-    });
-    
-    displayResults(results);
-    
-    gameState.client.say(gameState.channel, `⏱️ انتهى الوقت!`);
-    
-    gameState.currentGame = null;
-    activeGameCard.classList.add('hidden');
-    updateLeaderboard();
-}
-
-function evaluateAnswer(userAnswer) {
-    const normalizedUserAnswer = normalizeArabic(userAnswer);
-    
-    for (const answer of gameState.answers) {
-        const normalizedCorrectAnswer = normalizeArabic(answer.text);
-        
-        if (normalizedUserAnswer === normalizedCorrectAnswer) {
-            if (answer.type === 'super') {
-                return { points: 2, type: 'super' };
-            } else if (gameState.gameMode === 'match' || answer.type === 'match') {
-                return { points: 1, type: 'correct' };
-            } else if (answer.type === 'neutral') {
-                return { points: 0, type: 'neutral' };
-            } else if (gameState.gameMode === 'avoid' || answer.type === 'avoid') {
-                return { points: -1, type: 'incorrect' };
-            } else if (answer.type === 'bad') {
-                return { points: -2, type: 'bad' };
-            } else {
-                return { points: 0, type: 'neutral' };
-            }
-        }
+// Disconnect
+disconnectBtn.addEventListener('click', () => {
+    if (gameState.client) {
+        gameState.client.disconnect();
     }
-    
-    if (gameState.gameMode === 'match') {
-        return { points: 0, type: 'neutral' };
-    } else if (gameState.gameMode === 'avoid') {
-        return { points: 1, type: 'correct' };
-    } else {
-        return { points: 0, type: 'neutral' };
-    }
-}
-
-function displayResults(results) {
-    const answersText = gameState.answers.map(a => {
-        let label = '';
-        if (a.type === 'super') label = '💛 ذهبي (+2)';
-        else if (a.type === 'match') label = '🟢 أخضر (+1)';
-        else if (a.type === 'neutral') label = '🟡 أصفر (0)';
-        else if (a.type === 'avoid') label = '🔴 أحمر (-1)';
-        else if (a.type === 'bad') label = '⚫ أسود (-2)';
-        else label = '🟡 أصفر (0)';
-        return `<span style="margin-left: 15px;"><strong>${a.text}</strong> - ${label}</span>`;
-    }).join('');
-    
-    correctAnswers.innerHTML = answersText;
-    
-    resultsList.innerHTML = '';
-    results.forEach(r => {
-        const item = document.createElement('div');
-        item.className = `result-item ${r.type}`;
-        item.innerHTML = `
-            <div>
-                <span class="result-player">${r.username}</span>
-                <span class="result-answer">(${r.answer})</span>
-            </div>
-            <span class="result-points ${r.points > 0 ? 'positive' : r.points < 0 ? 'negative' : 'zero'}">
-                ${r.points > 0 ? '+' : ''}${r.points}
-            </span>
-        `;
-        resultsList.appendChild(item);
-    });
-    
-    resultsCard.classList.remove('hidden');
-    document.querySelector('.question-setup-card').style.display = 'block';
-}
-
-// ============================================
-// Leaderboard
-// ============================================
-
-function updateLeaderboard() {
-    if (gameState.leaderboard.size === 0) {
-        leaderboardList.innerHTML = '<div class="empty-state">لا توجد نتائج بعد</div>';
-        return;
-    }
-    
-    const sorted = Array.from(gameState.leaderboard.entries())
-        .sort((a, b) => b[1] - a[1]);
-    
-    leaderboardList.innerHTML = '';
-    sorted.forEach(([username, score], index) => {
-        const item = document.createElement('div');
-        item.className = `leaderboard-item${index === 0 ? ' rank-1' : ''}`;
-        item.innerHTML = `
-            <span class="leaderboard-rank">#${index + 1}</span>
-            <span class="leaderboard-name">${username}</span>
-            <span class="leaderboard-score">${score}</span>
-        `;
-        leaderboardList.appendChild(item);
-    });
-}
-
-resetLeaderboardBtn.addEventListener('click', () => {
-    if (confirm('هل أنت متأكد من إعادة تعيين جميع النقاط؟')) {
-        gameState.leaderboard.clear();
-        updateLeaderboard();
-        
-        if (gameState.client && gameState.isConnected) {
-            gameState.client.say(gameState.channel, '🔄 تم إعادة تعيين لوحة المتصدرين!');
-        }
-    }
+    gameState.isConnected = false;
+    gameSection.classList.add('hidden');
+    setupSection.classList.remove('hidden');
 });
 
-// ============================================
-// New Round
-// ============================================
-
-newRoundBtn.addEventListener('click', () => {
-    resultsCard.classList.add('hidden');
-    questionText.value = '';
-    document.querySelectorAll('.answer-input-float').forEach((input, index) => {
-        if (index === 0) {
-            input.value = '';
-        } else {
-            input.closest('.answer-input-group-float')?.remove();
-        }
-    });
-});
-
-// ============================================
-// Logo Handler
-// ============================================
-
-logoImage.addEventListener('error', () => {
-    logoImage.style.display = 'none';
-    logoImage.parentElement.style.background = 'linear-gradient(135deg, #00A8E8, #023E8A)';
-});
-
-// ============================================
-// Initialize
-// ============================================
-
-updateAnswersUI();
-
-});
+}); // End DOMContentLoaded
