@@ -58,7 +58,7 @@
             </div>
 
             <!-- Question Input Screen (NEW) -->
-            <div class="hidden" id="questionInputScreen" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(17, 24, 39, 0.8); backdrop-filter: blur(5px); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px;">
+            <div class="question-input-screen hidden" id="questionInputScreen">
                 <div class="question-input-card">
                     <h2 class="input-screen-title">📝 أدخل السؤال</h2>
                     
@@ -93,7 +93,7 @@
                         <input type="number" id="gameDurationInput" class="duration-input-large" value="30" min="10" max="120">
                     </div>
 
-                    <button class="btn-primary btn-large btn-huge" id="startGameBtnFinal">
+                    <button class="btn-primary btn-huge" id="startGameBtnFinal">
                         <span>🚀</span>
                         بدء الجولة
                     </button>
@@ -101,13 +101,14 @@
             </div>
 
             <!-- Main Controls -->
-            <div style="display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap;">
-                <button class="btn-primary btn-large" id="openQuestionScreen" style="flex: 1; min-width: 200px;">
+            <div class="main-controls" id="mainControls">
+                <button class="btn-primary btn-large" id="openQuestionScreen">
                     <span>📝</span>
                     سؤال جديد
                 </button>
 
-                <button class="btn-secondary btn-large leaderboard-toggle" id="leaderboardToggleBtn" style="flex: 1; min-width: 200px;">
+                <!-- Leaderboard Toggle Button -->
+                <button class="leaderboard-toggle-btn" id="leaderboardToggleBtn">
                     <span>🏆</span>
                     لوحة المتصدرين
                 </button>
@@ -123,12 +124,12 @@
 
             <!-- Active Game Display -->
             <div class="active-game-card hidden" id="activeGameCard">
-                <div class="card-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem;">
-                    <h3 class="section-title" id="activeQuestion" style="margin: 0;">السؤال</h3>
+                <div class="game-header">
+                    <h3 class="game-question" id="activeQuestion"></h3>
                     <div class="timer-display">
-                        <svg class="timer-circle" width="100" height="100">
-                            <circle class="timer-bg" cx="50" cy="50" r="40"></circle>
-                            <circle class="timer-progress" cx="50" cy="50" r="40" id="timerCircle"></circle>
+                        <svg class="timer-circle" width="80" height="80">
+                            <circle class="timer-bg" cx="40" cy="40" r="35"></circle>
+                            <circle class="timer-progress" cx="40" cy="40" r="35" id="timerCircle"></circle>
                         </svg>
                         <span class="timer-text" id="timerText">30</span>
                     </div>
@@ -151,7 +152,7 @@
             </div>
 
             <!-- Results Display (NEW - Big Boxes) -->
-            <div class="hidden" id="resultsDisplay">
+            <div class="results-display hidden" id="resultsDisplay">
                 <h2 class="results-title">📊 النتائج</h2>
                 
                 <div class="results-grid" id="resultsGrid">
