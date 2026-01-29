@@ -4,223 +4,165 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>أنت وحظك - لعبة تويتش تفاعلية</title>
-    <link rel="stylesheet" href="styles-professional.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
         <!-- Header -->
         <header class="header">
-            <div class="header-content">
-                <div class="logo-wrapper">
-                    <img src="logo.png" alt="شعار القناة">
-                </div>
-                <div class="header-text">
-                    <h1 class="main-title">أنت وحظك</h1>
-                    <p class="subtitle">لعبة تويتش التفاعلية</p>
-                </div>
+            <div class="logo-wrapper">
+                <img src="logo.png" alt="Logo" class="logo-new">
             </div>
+            <h1 class="main-title">أنت وحظك</h1>
+            <p class="subtitle">لعبة تويتش التفاعلية</p>
         </header>
 
         <!-- Setup Section -->
-        <section id="setupSection">
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-icon">
-                        <i class="fas fa-gamepad"></i>
-                    </div>
-                    <h2 class="card-title">ابدأ اللعبة</h2>
-                </div>
+        <section id="setupSection" class="setup-section">
+            <div class="setup-card">
+                <h2 class="section-title">
+                    <span class="title-icon">🎮</span>
+                    ابدأ اللعبة
+                </h2>
                 
-                <button class="btn btn-primary btn-large" id="twitchLoginBtn" style="width: 100%;">
-                    <i class="fab fa-twitch"></i>
+                <button class="btn-primary btn-large" id="twitchLoginBtn">
+                    <span>🔗</span>
                     الاتصال بتويتش
                 </button>
             </div>
         </section>
 
         <!-- Game Section -->
-        <section id="gameSection" class="hidden">
-            <!-- Connection Status -->
+        <section id="gameSection" class="game-section hidden">
             <div class="connection-status">
-                <div class="status-info">
-                    <div class="status-dot"></div>
-                    <span class="status-text">متصل بـ: <strong id="connectedChannel">-</strong></span>
-                </div>
-                <button class="btn btn-small btn-secondary" id="disconnectBtn">
-                    <i class="fas fa-sign-out-alt"></i>
-                    قطع الاتصال
-                </button>
+                <span class="status-dot"></span>
+                <span>متصل بـ: <strong id="connectedChannel">-</strong></span>
+                <button class="btn-disconnect" id="disconnectBtn">قطع الاتصال</button>
             </div>
 
             <!-- Floating Answers Box -->
-            <div class="floating-box" id="secretAnswersFloat">
-                <div class="floating-header" id="floatingHeader">
-                    <span class="floating-title">
-                        <i class="fas fa-list-check"></i>
-                        الإجابات
-                    </span>
-                    <button class="floating-toggle" id="secretToggle">
-                        <i class="fas fa-minus"></i>
-                    </button>
+            <div class="secret-answers-float" id="secretAnswersFloat">
+                <div class="secret-float-header">
+                    <button class="secret-toggle" id="secretToggle">−</button>
+                    <span class="secret-float-title">📝 الإجابات</span>
                 </div>
-                <div class="floating-content" id="secretContent">
+                <div class="secret-float-content" id="secretContent">
                     <div class="answers-list-float" id="answersListFloat">
-                        <div class="empty-state">
-                            <i class="fas fa-inbox"></i>
-                            <p>لم تضف إجابات بعد</p>
-                        </div>
+                        <div class="empty-state-float">لم تضف إجابات بعد</div>
                     </div>
-                    <button class="btn btn-primary" id="addAnswerFloatBtn" style="width: 100%;">
-                        <i class="fas fa-plus"></i>
+                    <button class="btn-add-float" id="addAnswerFloatBtn">
+                        <span>+</span>
                         إضافة إجابة
                     </button>
                 </div>
             </div>
 
-            <!-- Main Controls -->
-            <div style="display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap;">
-                <button class="btn btn-primary btn-large" id="openQuestionScreen" style="flex: 1; min-width: 200px;">
-                    <i class="fas fa-plus-circle"></i>
-                    سؤال جديد
-                </button>
-
-                <button class="btn btn-secondary btn-large leaderboard-toggle" id="leaderboardToggleBtn" style="flex: 1; min-width: 200px;">
-                    <i class="fas fa-trophy"></i>
-                    لوحة المتصدرين
-                </button>
-            </div>
-
-            <!-- Leaderboard Card -->
-            <div class="leaderboard-card hidden" id="leaderboardCard">
-                <div class="card-header">
-                    <div class="card-icon">
-                        <i class="fas fa-trophy"></i>
-                    </div>
-                    <h2 class="card-title">لوحة المتصدرين</h2>
-                </div>
-                <div class="leaderboard-list" id="leaderboardList">
-                    <div class="empty-state">
-                        <i class="fas fa-chart-simple"></i>
-                        <p>لا توجد نقاط بعد</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Question Input Screen -->
-            <div class="hidden" id="questionInputScreen" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.9); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px;">
-                <div class="card" style="max-width: 800px; width: 100%; max-height: 90vh; overflow-y: auto;">
-                    <div class="card-header">
-                        <div class="card-icon">
-                            <i class="fas fa-file-lines"></i>
-                        </div>
-                        <h2 class="card-title">أدخل السؤال</h2>
+            <!-- Question Input Screen (NEW) -->
+            <div class="question-input-screen hidden" id="questionInputScreen">
+                <div class="question-input-card">
+                    <h2 class="input-screen-title">📝 أدخل السؤال</h2>
+                    
+                    <div class="form-group-large">
+                        <label class="input-label-large">السؤال</label>
+                        <input type="text" id="questionTextInput" class="question-input-large" placeholder="مثال: اذكر دولة خليجية">
                     </div>
 
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="fas fa-question-circle"></i>
-                            السؤال
-                        </label>
-                        <input type="text" id="questionTextInput" class="form-input" placeholder="مثال: اذكر دولة خليجية">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="fas fa-sliders"></i>
-                            نوع اللعبة
-                        </label>
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-                            <button class="btn btn-secondary mode-btn active" data-mode="match" style="padding: 1.25rem; flex-direction: column; height: auto;">
-                                <i class="fas fa-check" style="font-size: 1.5rem; margin-bottom: 0.5rem;"></i>
-                                <strong>مطابقة</strong>
-                                <small style="margin-top: 0.25rem; font-weight: normal; opacity: 0.7;">من يكتب نفس إجابتك يفوز</small>
+                    <div class="form-group-large">
+                        <label class="input-label-large">نوع اللعبة</label>
+                        <div class="mode-selector-large">
+                            <button class="mode-btn-large active" data-mode="match">
+                                <span class="mode-icon-large">✓</span>
+                                <span class="mode-label-large">مطابقة</span>
+                                <small>من يكتب نفس إجابتك يفوز</small>
                             </button>
-                            <button class="btn btn-secondary mode-btn" data-mode="avoid" style="padding: 1.25rem; flex-direction: column; height: auto;">
-                                <i class="fas fa-xmark" style="font-size: 1.5rem; margin-bottom: 0.5rem;"></i>
-                                <strong>تجنب</strong>
-                                <small style="margin-top: 0.25rem; font-weight: normal; opacity: 0.7;">من يكتب إجابة مختلفة يفوز</small>
+                            <button class="mode-btn-large" data-mode="avoid">
+                                <span class="mode-icon-large">✗</span>
+                                <span class="mode-label-large">تجنب</span>
+                                <small>من يكتب إجابة مختلفة يفوز</small>
                             </button>
-                            <button class="btn btn-secondary mode-btn" data-mode="colors" style="padding: 1.25rem; flex-direction: column; height: auto;">
-                                <i class="fas fa-palette" style="font-size: 1.5rem; margin-bottom: 0.5rem;"></i>
-                                <strong>ألوان</strong>
-                                <small style="margin-top: 0.25rem; font-weight: normal; opacity: 0.7;">إجابات بنقاط مختلفة</small>
+                            <button class="mode-btn-large" data-mode="colors">
+                                <span class="mode-icon-large">🎨</span>
+                                <span class="mode-label-large">ألوان</span>
+                                <small>🟢(+1) 🟡(0) 🔴(-1)</small>
                             </button>
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="fas fa-clock"></i>
-                            مدة الجولة (بالثواني)
-                        </label>
-                        <input type="number" id="gameDurationInput" class="form-input" value="30" min="10" max="120">
+                    <div class="form-group-large">
+                        <label class="input-label-large">مدة الجولة (بالثواني)</label>
+                        <input type="number" id="gameDurationInput" class="duration-input-large" value="30" min="10" max="120">
                     </div>
 
-                    <button class="btn btn-primary btn-large" id="startGameBtnFinal" style="width: 100%;">
-                        <i class="fas fa-play"></i>
+                    <button class="btn-primary btn-huge" id="startGameBtnFinal">
+                        <span>🚀</span>
                         بدء الجولة
                     </button>
                 </div>
             </div>
 
-            <!-- Active Game Card -->
-            <div class="card hidden" id="activeGameCard">
-                <div class="card-header">
-                    <div class="card-icon">
-                        <i class="fas fa-circle-play"></i>
-                    </div>
-                    <h2 class="card-title" id="activeQuestion">السؤال</h2>
-                </div>
+            <!-- Main Controls -->
+            <div class="main-controls" id="mainControls">
+                <button class="btn-primary btn-large" id="openQuestionScreen">
+                    <span>📝</span>
+                    سؤال جديد
+                </button>
 
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem;">
+                <!-- Leaderboard Toggle Button -->
+                <button class="leaderboard-toggle-btn" id="leaderboardToggleBtn">
+                    <span>🏆</span>
+                    لوحة المتصدرين
+                </button>
+            </div>
+
+            <!-- Leaderboard Card (Hidden by default) -->
+            <div class="leaderboard-card hidden" id="leaderboardCard">
+                <h3 class="leaderboard-title">🏆 لوحة المتصدرين</h3>
+                <div class="leaderboard-list" id="leaderboardList">
+                    <div class="empty-state">لا توجد نقاط بعد</div>
+                </div>
+            </div>
+
+            <!-- Active Game Display -->
+            <div class="active-game-card hidden" id="activeGameCard">
+                <div class="game-header">
+                    <h3 class="game-question" id="activeQuestion"></h3>
                     <div class="timer-display">
-                        <svg class="timer-circle" width="100" height="100">
-                            <circle class="timer-bg" cx="50" cy="50" r="40"></circle>
-                            <circle class="timer-progress" cx="50" cy="50" r="40" id="timerCircle"></circle>
+                        <svg class="timer-circle" width="80" height="80">
+                            <circle class="timer-bg" cx="40" cy="40" r="35"></circle>
+                            <circle class="timer-progress" cx="40" cy="40" r="35" id="timerCircle"></circle>
                         </svg>
                         <span class="timer-text" id="timerText">30</span>
                     </div>
                 </div>
 
                 <div class="participants-section">
-                    <div class="participants-header">
-                        <i class="fas fa-users"></i>
-                        <h3 style="flex: 1; margin: 0; font-size: 1.125rem;">المشاركون</h3>
-                        <span class="participants-count" id="participantsCount">0</span>
-                    </div>
+                    <h4 class="participants-title">
+                        <span>👥</span>
+                        المشاركون (<span id="participantsCount">0</span>)
+                    </h4>
                     <div class="participants-list" id="participantsList">
-                        <div class="empty-state">
-                            <i class="fas fa-user-group"></i>
-                            <p>لا يوجد مشاركون بعد</p>
-                        </div>
+                        <div class="empty-state">لا يوجد مشاركون بعد</div>
                     </div>
                 </div>
 
-                <button class="btn btn-danger btn-large" id="endGameBtn" style="width: 100%;">
-                    <i class="fas fa-stop"></i>
+                <button class="btn-danger btn-large" id="endGameBtn">
+                    <span>⏹️</span>
                     إنهاء الجولة
                 </button>
             </div>
 
-            <!-- Results Display -->
-            <div class="hidden" id="resultsDisplay">
-                <div class="card">
-                    <div class="card-header">
-                        <div class="card-icon">
-                            <i class="fas fa-chart-bar"></i>
-                        </div>
-                        <h2 class="card-title">النتائج</h2>
-                    </div>
-                    
-                    <div class="results-grid" id="resultsGrid">
-                        <!-- Results will be populated by JavaScript -->
-                    </div>
-
-                    <button class="btn btn-primary btn-large" id="nextRoundBtn" style="width: 100%;">
-                        <i class="fas fa-arrow-right"></i>
-                        جولة جديدة
-                    </button>
+            <!-- Results Display (NEW - Big Boxes) -->
+            <div class="results-display hidden" id="resultsDisplay">
+                <h2 class="results-title">📊 النتائج</h2>
+                
+                <div class="results-grid" id="resultsGrid">
+                    <!-- Will be populated by JavaScript -->
                 </div>
+
+                <button class="btn-primary btn-large" id="nextRoundBtn">
+                    <span>▶️</span>
+                    جولة جديدة
+                </button>
             </div>
         </section>
     </div>
