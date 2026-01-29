@@ -225,6 +225,14 @@ body::before {
 }
 
 /* =================== NEW HEADER =================== */
+/* =================== HEADER =================== */
+.header {
+    text-align: center;
+    margin-bottom: 50px;
+    position: relative;
+    padding: 60px 20px 40px;
+}
+
 .header-new {
     text-align: center;
     margin-bottom: 50px;
@@ -233,12 +241,18 @@ body::before {
 }
 
 .logo-wrapper {
-    margin-bottom: 30px;
+    margin: 0 auto 30px;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .logo-new {
     max-width: 180px;
     height: auto;
+    display: block;
+    margin: 0 auto;
     filter: drop-shadow(0 0 20px var(--primary-glow));
     animation: float 3s ease-in-out infinite;
 }
@@ -248,13 +262,16 @@ body::before {
     50% { transform: translateY(-10px); }
 }
 
-.title-container {
-    position: relative;
+@keyframes gradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }
 
+.main-title,
 .game-title {
-    font-family: 'Amiri', 'Tajawal', serif;
-    font-size: 5rem;
+    font-family: 'Cairo', 'Tajawal', sans-serif;
+    font-size: 4rem;
     font-weight: 700;
     background: linear-gradient(135deg, var(--primary-color), var(--secondary-color), var(--accent-color));
     background-size: 200% 200%;
@@ -262,31 +279,20 @@ body::before {
     -webkit-text-fill-color: transparent;
     background-clip: text;
     animation: gradient 3s ease infinite;
-    letter-spacing: 3px;
+    letter-spacing: 2px;
     margin-bottom: 15px;
     text-shadow: 0 0 60px var(--primary-glow);
+    text-align: center;
 }
 
-@keyframes gradient {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-}
-
-.title-underline {
-    width: 200px;
-    height: 4px;
-    background: linear-gradient(90deg, transparent, var(--primary-color), transparent);
-    margin: 0 auto 20px;
-    border-radius: 2px;
-    box-shadow: 0 0 10px var(--primary-glow);
-}
-
+.subtitle,
 .game-subtitle {
+    font-family: 'Cairo', 'Tajawal', sans-serif;
     font-size: 1.3rem;
     color: var(--text-secondary);
     font-weight: 400;
     letter-spacing: 1px;
+    text-align: center;
 }
 
 .header-decoration {
